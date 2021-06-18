@@ -1,0 +1,40 @@
+Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=true:hinting=true"
+       , additionalFonts = [ "xft:Hasklug Nerd Font Mono:pixelsize=27:antialias=true:hinting=true"
+                           , "xft:Hasklug Nerd Font Mono:pixelsize=16:antialias=true:hinting=true"
+                           ]
+       , borderColor = "black"
+       , border = TopB
+       , bgColor = "#1B1C22"
+       , fgColor = "#D1D5DA"
+       , alpha = 255
+       , position = Bottom
+       , textOffset = 18
+       , textOffsets = [21]
+       , iconOffset = -1
+       , lowerOnStart = True
+       , pickBroadest = False
+       , persistent = False
+       , hideOnStart = False
+       , iconRoot = "."
+       , allDesktops = True
+       , overrideRedirect = True
+       , commands = [ Run Cpu ["-t", "<fn=1>\xf463</fn> <total>%"] 10
+                    , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 60
+                    , Run Battery [ "-t", "<acstatus> <left>%"
+                                  , "--"
+                                  , "-o", "<fn=2>\xf580</fn>"
+                                  , "-O", "<fn=2>\x26a1</fn>"
+                                  , "-i", "<fn=2>\xf580</fn>"
+                                  , "-h", "green"
+                                  , "-l", "#F97583"
+                                  , "-p", "#67F07B"
+                                  , "-A", "5"
+                                  , "-a", "notify-send -u critical 'Battery about to run out! Put me on AC ASAP!!!!'"
+                      ] 10
+                    , Run Date "<fc=#BAEFF6><fn=1>\xf133</fn> %a %d-%m-%Y</fc>  <fc=#C4E6F5><fn=1>\xf64f</fn> %H:%M</fc>" "date" 10
+                    , Run StdinReader
+                    ]
+       , sepChar = "%"
+       , alignSep = "}{"
+       , template = " %StdinReader% }{ <fc=#CEDCF4>%cpu%</fc>  <fc=#E2C9F2>%bright%</fc>  <fc=#F6B6F0>%battery%</fc> "
+       }
