@@ -120,7 +120,7 @@ export PATH=$PATH:~/scripts
 export PATH=$PATH:~/android-studio/bin
 
 alias android-studio='studio.sh'
-alias dotmgmt='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
+alias dots='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 
 # load autojump (j)
 . /usr/share/autojump/autojump.bash
