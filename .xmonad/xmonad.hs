@@ -16,11 +16,13 @@ import XMonad.Actions.GridSelect
 import XMonad.Actions.Minimize
 import XMonad.Actions.Search as S
 import XMonad.Actions.Submap as SM
+import XMonad.Actions.WindowBringer
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.Minimize
 import XMonad.Hooks.ManageHelpers
 import XMonad.Hooks.SetWMName
+import XMonad.Hooks.ScreenCorners
 import qualified XMonad.Layout.BoringWindows as BW
 import XMonad.Layout.LimitWindows
 import XMonad.Layout.Minimize
@@ -217,6 +219,10 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-d", removeWorkspace)
     -- Prompt for a workspace and remove it
     , ("M-S-d", withWorkspace deleteWorkspacePrompt removeWorkspaceByTag)
+    -- Go to workspace of chosen window
+    , ("M-b", gotoMenu)
+    -- Bring chosen window to current workspace
+    , ("M-S-b", bringMenu)
     -- Open GridSelect
     , ("M-g", spawnSelected myGridSelectConfig ["firefox", "chromium"])
     -- Open Firefox
@@ -279,7 +285,13 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 -- The available layouts.  Note that each layout is separated by |||,
 -- which denotes layout choice.
 --
-myLayout = avoidStruts $ noBorders ((renamed [Replace "MyFull"] $ minimize Full) ||| tabbed shrinkText (theme darkTheme) ||| tiled ||| Mirror tiled)
+myLayout = screenCornerLayoutHook
+         $ avoidStruts
+         $ noBorders (   (renamed [Replace "MyFull"] $ minimize Full)
+                     ||| tabbed shrinkText (theme darkTheme)
+                     ||| tiled
+                     ||| Mirror tiled
+                     )
   where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
@@ -312,6 +324,7 @@ myManageHook = composeAll
     [ className =? "MPlayer"                      --> doFloat
     , className =? "Gimp"                         --> doFloat
     , className =? "Skype"                        --> doShift "skype"
+    , className =? "Java"                         --> doFloat
     , title     =? "Microsoft Teams Notification" --> doSideFloat NC
     -- , isFullscreen                                --> myDoFullFloat
     , resource  =? "desktop_window"               --> doIgnore
@@ -326,7 +339,9 @@ myManageHook = composeAll
 -- return (All True) if the default handler is to be run afterwards. To
 -- combine event hooks use mappend or mconcat from Data.Monoid.
 --
-myHandleEventHook = minimizeEventHook
+myHandleEventHook e = do
+  minimizeEventHook e
+  screenCornerEventHook e
 
 ------------------------------------------------------------------------
 -- Status bars and logging
@@ -353,6 +368,9 @@ myStartupHook = do
         spawnOnce "trayer --edge top --align right --widthtype request --padding 5 --SetDockType true --SetPartialStrut false --expand true --monitor 1 --transparent true --alpha 0 --tint 0x1b1c22 --height 25"
         setWMName "LG3D"
         setDefaultCursor xC_left_ptr -- never show `X` pointer, but use normal arrow pointer instead
+        addScreenCorners [ (SCLowerRight, nextWS)
+                         , (SCLowerLeft, prevWS)
+                         ]
 
 ------------------------------------------------------------------------
 
