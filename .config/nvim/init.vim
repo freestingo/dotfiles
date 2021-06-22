@@ -66,6 +66,7 @@ nnoremap <C-j> o<Esc>
 nnoremap <F4> :lua package.loaded.freestingotelescope = nil<CR>:lua package.loaded.freestingotreesitter =  nil<CR>:source ~/.config/nvim/init.vim<CR>
 nnoremap <leader>ex :wincmd v <bar> :Ex <bar> :vertical resize 40<CR>
 nnoremap <leader>sh :wincmd s <bar> :wincmd w <bar> :terminal<CR>
+nnoremap <leader>ghci :wincmd s <bar> :wincmd w <bar> :terminal<CR>stack ghci<CR>
 nnoremap <leader>bp :bprevious<CR>
 nnoremap <leader>bn :bnext<CR>
 nnoremap <leader>cl :so ~/.config/nvim/vim-plug/plugins.vim <bar> :PlugClean<CR>
@@ -81,6 +82,7 @@ nnoremap <leader>tsl :call SetBuffer(2)<CR>
 nnoremap <leader>tsò :call SetBuffer(3)<CR>
 
 tnoremap shq <C-\><C-n>:bd!<CR>
+tnoremap ghq :q<C-\><C-n>:bd!<CR>
 tnoremap shw <C-\><C-n><C-o>
 
 " Telescope remaps
