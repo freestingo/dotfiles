@@ -16,6 +16,7 @@ import XMonad.Actions.GridSelect
 import XMonad.Actions.Minimize
 import XMonad.Actions.Search as S
 import XMonad.Actions.Submap as SM
+import XMonad.Actions.Warp
 import XMonad.Actions.WindowBringer
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.ManageDocks
@@ -34,6 +35,7 @@ import XMonad.Prompt.Unicode
 import XMonad.Util.Cursor
 import XMonad.Util.EZConfig
 import XMonad.Util.Loggers
+import XMonad.Util.NamedScratchpad
 import XMonad.Util.SpawnOnce
 import XMonad.Util.Themes
 import XMonad.Util.Run
@@ -46,7 +48,7 @@ import qualified Data.Map        as M
 -- FREE-RANGE VARIABLES
 -- home-grown variables for easy config editing and wellness
 
-myTerminal      = "gnome-terminal"
+myTerminal = "alacritty"
 
 myFocusFollowsMouse :: Bool
 myFocusFollowsMouse = True
@@ -55,14 +57,14 @@ myClickJustFocuses :: Bool
 myClickJustFocuses = False
 
 -- could be overridden by XMonad.Layout.NoBorders
-myBorderWidth = 2
+myBorderWidth = 3
 
 -- mod1Mask = left alt
 -- mod4Mask = windows key
 myModMask = mod1Mask
 
 myWorkspaces :: [String]
-myWorkspaces = ["front","back","web","oncode","npo","todo","chat","skype","fun"]
+myWorkspaces = ["code","front","back","web","oncode","npo","chat","skype","fun"]
 
 myNormalBorderColor :: String
 myNormalBorderColor  = "#1E2428"
@@ -82,6 +84,17 @@ myGridSelectConfig = defaultGSConfig { gs_font = "xft:Hasklug Nerd Font Mono:pix
 myBrowser :: String
 myBrowser = "firefox"
 
+myScratchpads = [ NS "terminal" spawnTerminal findTerminal manageTerminal
+                , NS "todo" spawnTodo findTodo manageTodo
+                ]
+                  where spawnTerminal = ("alacritty --title=Scratchpad")
+                        findTerminal = (title =? "Scratchpad")
+                        manageTerminal = (customFloating $ W.RationalRect (3/25) (3/25) (3/4) (3/4))
+
+                        spawnTodo = ("alacritty --title=TODO --command vim ~/Documents/oncode/projects/npo/todo")
+                        findTodo = (title =? "TODO")
+                        manageTodo = (customFloating $ W.RationalRect (1/9) (1/10) (3/4) (3/4))
+
 switchWorkspacePrompt :: XPConfig
 switchWorkspacePrompt = styledPrompt "Switch to workspace: "
 
@@ -99,6 +112,7 @@ styledPrompt promptMsg = def { font = "xft:Hasklug Nerd Font Mono:weight=bold:pi
                              , promptBorderWidth = 3
                              , position = CenteredAt { xpCenterY = 0.43, xpWidth = 0.4 }
                              , defaultPrompter = \x -> promptMsg
+                             , maxComplRows = Just 6
                              }
 
 searchEngineMap method = M.fromList $
@@ -121,12 +135,11 @@ myKeysOldSyntax conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- launch dmenu
     , ((modm, xK_p), spawn "dmenu_run")
 
-    -- launch gmrun
-    , ((modm .|. shiftMask, xK_p), spawn "gmrun")
+    -- -- launch gmrun
+    -- , ((modm .|. shiftMask, xK_p), spawn "gmrun")
 
     -- Search commands
     , ((modm, xK_s), SM.submap $ searchEngineMap $ S.promptSearch $ styledPrompt "Search: ")
-    , ((modm .|. shiftMask, xK_s), SM.submap $ searchEngineMap $ S.selectSearch)
 
     -- close focused window
     , ((modm .|. shiftMask, xK_c), kill)
@@ -223,6 +236,12 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-b", gotoMenu)
     -- Bring chosen window to current workspace
     , ("M-S-b", bringMenu)
+    -- Move mouse cursor to a corner of the focused window
+    , ("M-S-p", banish LowerRight)
+    -- Open terminal scratchpad
+    , ("M-S-s", namedScratchpadAction myScratchpads "terminal")
+    -- Open todo scratchpad
+    , ("M-S-t", namedScratchpadAction myScratchpads "todo")
     -- Open GridSelect
     , ("M-g", spawnSelected myGridSelectConfig ["firefox", "chromium"])
     -- Open Firefox
@@ -328,7 +347,8 @@ myManageHook = composeAll
     , title     =? "Microsoft Teams Notification" --> doSideFloat NC
     -- , isFullscreen                                --> myDoFullFloat
     , resource  =? "desktop_window"               --> doIgnore
-    , resource  =? "kdesktop"                     --> doIgnore ]
+    , resource  =? "kdesktop"                     --> doIgnore
+    ] <+> namedScratchpadManageHook myScratchpads
 
 ------------------------------------------------------------------------
 -- Event handling
@@ -368,9 +388,9 @@ myStartupHook = do
         spawnOnce "trayer --edge top --align right --widthtype request --padding 5 --SetDockType true --SetPartialStrut false --expand true --monitor 1 --transparent true --alpha 0 --tint 0x1b1c22 --height 25"
         setWMName "LG3D"
         setDefaultCursor xC_left_ptr -- never show `X` pointer, but use normal arrow pointer instead
-        addScreenCorners [ (SCLowerRight, nextWS)
-                         , (SCLowerLeft, prevWS)
-                         ]
+        -- addScreenCorners [ (SCLowerRight, nextWS)
+        --                  , (SCLowerLeft, prevWS)
+        --                  ]
 
 ------------------------------------------------------------------------
 
