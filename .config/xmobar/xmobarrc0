@@ -30,7 +30,7 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
                                   , "-p", "#67F07B"
                                   , "-A", "5"
                                   , "-a", "notify-send -u critical 'Battery about to run out! Put me on AC ASAP!!!!'"
-                      ] 10
+                      ] 100
                     , Run Date "<fc=#BAEFF6><fn=1>\xf133</fn> %a %d-%m-%Y</fc>  <fc=#C4E6F5><fn=1>\xf64f</fn> %H:%M</fc>" "date" 10
                     , Run StdinReader
                     ]
