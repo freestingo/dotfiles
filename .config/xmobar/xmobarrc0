@@ -19,7 +19,7 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
        , allDesktops = True
        , overrideRedirect = True
        , commands = [ Run Cpu ["-t", "<fn=1>\xf463</fn> <total>%"] 10
-                    , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 60
+                    , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 10
                     , Run Battery [ "-t", "<acstatus> <left>%"
                                   , "--"
                                   , "-o", "<fn=2>\xf580</fn>"

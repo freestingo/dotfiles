@@ -381,7 +381,7 @@ myLogHook = return ()
 -- By default, do nothing.
 myStartupHook = do
         spawnOnce "nitrogen --restore &"
-        spawnOnce "compton &"
+        spawnOnce "picom --experimental-backends --blur-background --blur-method gaussian --blur-kern 11x11gaussian --xrender-sync-fence"
         spawnOnce "~/scripts/startupcmds.sh &"
         spawnOnce "nm-applet &"
         spawnOnce "volumeicon &"
@@ -400,7 +400,7 @@ myStartupHook = do
 projects :: [Project]
 projects =
     [ Project { projectName = "web"
-              , projectDirectory = "~/"
+              , projectDirectory = "~/Downloads/"
               , projectStartHook = Just $ do spawn myBrowser
               }
     , Project { projectName = "oncode"
