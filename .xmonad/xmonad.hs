@@ -381,7 +381,10 @@ myLogHook = return ()
 -- By default, do nothing.
 myStartupHook = do
         spawnOnce "nitrogen --restore &"
-        spawnOnce "picom --experimental-backends --blur-background --blur-method gaussian --blur-kern 11x11gaussian --xrender-sync-fence"
+        spawnOnce $ "picom --experimental-backends"
+                 ++ " --blur-background --blur-background-exclude \"name = 'rect-overlay'\" --blur-method gaussian --blur-kern 11x11gaussian"
+                 ++ " --xrender-sync-fence"
+        spawnOnce "redshift-gtk &"
         spawnOnce "~/scripts/startupcmds.sh &"
         spawnOnce "nm-applet &"
         spawnOnce "volumeicon &"
