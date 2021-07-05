@@ -87,13 +87,13 @@ myBrowser = "firefox"
 myScratchpads = [ NS "terminal" spawnTerminal findTerminal manageTerminal
                 , NS "todo" spawnTodo findTodo manageTodo
                 ]
-                  where spawnTerminal = ("alacritty --title=Scratchpad")
-                        findTerminal = (title =? "Scratchpad")
-                        manageTerminal = (customFloating $ W.RationalRect (3/25) (3/25) (3/4) (3/4))
+                  where spawnTerminal = "alacritty --title=Scratchpad"
+                        findTerminal = title =? "Scratchpad"
+                        manageTerminal = customFloating $ W.RationalRect (3/25) (3/25) (3/4) (3/4)
 
-                        spawnTodo = ("alacritty --title=TODO --command vim ~/Documents/oncode/projects/npo/todo")
-                        findTodo = (title =? "TODO")
-                        manageTodo = (customFloating $ W.RationalRect (1/9) (1/10) (3/4) (3/4))
+                        spawnTodo = "alacritty --title=TODO --command vim ~/Documents/oncode/projects/npo/todo"
+                        findTodo = title =? "TODO"
+                        manageTodo = customFloating $ W.RationalRect (1/9) (1/10) (3/4) (3/4)
 
 switchWorkspacePrompt :: XPConfig
 switchWorkspacePrompt = styledPrompt "Switch to workspace: "
@@ -111,11 +111,11 @@ styledPrompt promptMsg = def { font = "xft:Hasklug Nerd Font Mono:weight=bold:pi
                              , height = 40
                              , promptBorderWidth = 3
                              , position = CenteredAt { xpCenterY = 0.43, xpWidth = 0.4 }
-                             , defaultPrompter = \x -> promptMsg
+                             , defaultPrompter = const promptMsg
                              , maxComplRows = Just 6
                              }
 
-searchEngineMap method = M.fromList $
+searchEngineMap method = M.fromList
       [ ((0, xK_g), method S.google)
       , ((0, xK_h), method S.hoogle)
       , ((0, xK_i), method S.images)
@@ -127,7 +127,7 @@ searchEngineMap method = M.fromList $
 ------------------------------------------------------------------------
 -- KEY BINDINGS
 
-myKeysOldSyntax conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
+myKeysOldSyntax conf@XConfig { XMonad.modMask = modm } = M.fromList $
 
     -- launch a terminal
     [ ((modm .|. shiftMask, xK_Return), spawn $ XMonad.terminal conf)
@@ -181,7 +181,7 @@ myKeysOldSyntax conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((modm              , xK_period), sendMessage (IncMasterN (-1)))
 
     -- Quit xmonad
-    , ((modm .|. shiftMask, xK_q     ), io (exitWith ExitSuccess))
+    , ((modm .|. shiftMask, xK_q     ), io exitSuccess)
 
     -- Restart xmonad
     , ((modm              , xK_q     ), spawn "xmonad --recompile; xmonad --restart")
@@ -266,29 +266,29 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-S-<Print>", spawn "scrot -u -e 'mv $f ~/Pictures/'")
   ]
 
-myKeys conf = (myKeysNewSyntax conf) <+> (myKeysOldSyntax conf)
+myKeys conf = myKeysNewSyntax conf <+> myKeysOldSyntax conf
 
 ------------------------------------------------------------------------
 -- Mouse bindings: default actions bound to mouse events
 --
-myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
+myMouseBindings XConfig { XMonad.modMask = modm } = M.fromList
 
     -- mod-button1, Set the window to floating mode and move by dragging
-    [ ((modm, button1), (\w -> focus w
-                            >> mouseMoveWindow w
-                            >> ifClick (snapMagicMove (Just 50) (Just 50) w)))
+    [ ((modm, button1), \w -> focus w
+                           >> mouseMoveWindow w
+                           >> ifClick (snapMagicMove (Just 50) (Just 50) w))
 
-    , ((modm .|. shiftMask, button1), (\w -> focus w
-                                          >> mouseMoveWindow w
-                                          >> ifClick (snapMagicResize [L,R,U,D] (Just 50) (Just 50) w)))
+    , ((modm .|. shiftMask, button1), \w -> focus w
+                                         >> mouseMoveWindow w
+                                         >> ifClick (snapMagicResize [L,R,U,D] (Just 50) (Just 50) w))
 
     -- mod-button2, Raise the window to the top of the stack
-    , ((modm, button2), (\w -> focus w
-                            >> windows W.shiftMaster))
+    , ((modm, button2), \w -> focus w
+                           >> windows W.shiftMaster)
 
     -- mod-button3, Set the window to floating mode and resize by dragging
-    , ((modm, button3), (\w -> focus w
-                            >> Flex.mouseResizeWindow w >> windows W.shiftMaster))
+    , ((modm, button3), \w -> focus w
+                           >> Flex.mouseResizeWindow w >> windows W.shiftMaster)
 
     -- you may also bind events to the mouse scroll wheel (button4 and button5)
     ]
@@ -306,7 +306,7 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
 --
 myLayout = screenCornerLayoutHook
          $ avoidStruts
-         $ noBorders (   (renamed [Replace "MyFull"] $ minimize Full)
+         $ noBorders (   renamed [Replace "MyFull"] (minimize Full)
                      ||| tabbed shrinkText (theme darkTheme)
                      ||| tiled
                      ||| Mirror tiled
