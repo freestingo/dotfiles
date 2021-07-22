@@ -73,10 +73,10 @@ myFocusedBorderColor :: String
 myFocusedBorderColor = "#A6D67C"
 
 myGridSelectConfig :: HasColorizer a => GSConfig a
-myGridSelectConfig = defaultGSConfig { gs_font = "xft:Hasklug Nerd Font Mono:pixelsize=16:antialias=true:hinting=true"
-                                     , gs_cellheight = 30
-                                     , gs_cellwidth = 100
-                                     }
+myGridSelectConfig = def { gs_font = "xft:Hasklug Nerd Font Mono:pixelsize=16:antialias=true:hinting=true"
+                         , gs_cellheight = 30
+                         , gs_cellwidth = 100
+                         }
 
 -- myDoFullFloat :: ManageHook
 -- myDoFullFloat = doF W.focusDown <+> doFullFloat
@@ -116,13 +116,14 @@ styledPrompt promptMsg = def { font = "xft:Hasklug Nerd Font Mono:weight=bold:pi
                              }
 
 searchEngineMap method = M.fromList
-      [ ((0, xK_g), method S.google)
-      , ((0, xK_h), method S.hoogle)
-      , ((0, xK_i), method S.images)
-      , ((0, xK_m), method S.maps)
-      , ((0, xK_w), method S.wikipedia)
-      , ((0, xK_y), method S.youtube)
-      ]
+    [ ((0, xK_g), method S.google)
+    , ((0, xK_h), method S.hoogle)
+    , ((0, xK_i), method S.images)
+    , ((0, xK_m), method S.maps)
+    , ((0, xK_s), method $ S.searchEngine "splice" "https://splice.com/sounds/search?q=")
+    , ((0, xK_w), method S.wikipedia)
+    , ((0, xK_y), method S.youtube)
+    ]
 
 ------------------------------------------------------------------------
 -- KEY BINDINGS
@@ -244,6 +245,8 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-S-t", namedScratchpadAction myScratchpads "todo")
     -- Open GridSelect
     , ("M-g", spawnSelected myGridSelectConfig ["firefox", "chromium"])
+    -- View all open windows with GridSelect
+    , ("M-S-g", goToSelected def)
     -- Open Firefox
     , ("M-x", spawn myBrowser)
     -- Open Firefox in private mode
@@ -384,13 +387,14 @@ myStartupHook = do
         spawnOnce $ "picom --experimental-backends"
                  ++ " --blur-background --blur-method gaussian --blur-kern 11x11gaussian"
                  ++ " --xrender-sync-fence"
-        spawnOnce "redshift-gtk &"
+        -- manually setting latitude and longitude values because auto-location detection won't work for some reason
+        spawnOnce "redshift-gtk -l 42.907546:13.882904 &"
         spawnOnce "~/scripts/startupcmds.sh &"
         spawnOnce "nm-applet &"
         spawnOnce "volumeicon &"
         spawnOnce "trayer --edge top --align right --widthtype request --padding 5 --SetDockType true --SetPartialStrut false --expand true --monitor 1 --transparent true --alpha 0 --tint 0x1b1c22 --height 25"
         setWMName "LG3D"
-        setDefaultCursor xC_left_ptr -- never show `X` pointer, but use normal arrow pointer instead
+        setDefaultCursor xC_left_ptr -- never show `X` shaped pointer, but use normal arrow pointer instead
         -- addScreenCorners [ (SCLowerRight, nextWS)
         --                  , (SCLowerLeft, prevWS)
         --                  ]

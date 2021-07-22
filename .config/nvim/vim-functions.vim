@@ -57,7 +57,7 @@ fun! SmartJumpToEnd()
       let next_two_chars = strpart(line, col('.')-1, 2)
 
       " TODO use a regex here... this is kinda dumb
-      if (next_char == '"' || next_char == "'" || next_char == ")" || next_char == "]" || next_char == ">")
+      if (next_char == '"' || next_char == "'" || next_char == ")" || next_char == "]" || next_char == ">" || next_char == "}" || next_char == "`")
             return "\<Esc>\l\a"
       elseif (next_two_chars == " }")
             return "\<Esc>\l\l\a"
