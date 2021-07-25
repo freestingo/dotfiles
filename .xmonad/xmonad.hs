@@ -2,7 +2,11 @@
 -- IMPORTS
 
 import XMonad
+import Data.Char
+import Data.List
+import Data.Maybe
 import Data.Monoid
+import Control.Monad
 import Graphics.X11.ExtraTypes.XF86
 import System.Exit
 import XMonad.Actions.DynamicProjects
@@ -14,10 +18,12 @@ import qualified XMonad.Actions.FlexibleManipulate as Flex
 import qualified XMonad.Actions.FlexibleResize as Flex
 import XMonad.Actions.GridSelect
 import XMonad.Actions.Minimize
+import XMonad.Actions.PerWorkspaceKeys
 import XMonad.Actions.Search as S
 import XMonad.Actions.Submap as SM
 import XMonad.Actions.Warp
 import XMonad.Actions.WindowBringer
+import XMonad.Actions.WindowGo
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.Minimize
@@ -31,8 +37,11 @@ import XMonad.Layout.NoBorders
 import XMonad.Layout.Renamed
 import XMonad.Layout.Tabbed
 import XMonad.Prompt
+import XMonad.Prompt.ConfirmPrompt
+import XMonad.Prompt.Theme
 import XMonad.Prompt.Unicode
 import XMonad.Util.Cursor
+import qualified XMonad.Util.Dmenu as D
 import XMonad.Util.EZConfig
 import XMonad.Util.Loggers
 import XMonad.Util.NamedScratchpad
@@ -65,6 +74,11 @@ myModMask = mod1Mask
 
 myWorkspaces :: [String]
 myWorkspaces = ["code","front","back","web","oncode","npo","chat","skype","fun"]
+
+clickable :: String -> String
+clickable ws = "<action=xdotool key alt+" ++ show index ++ ">" ++ ws ++ "</action>"
+    where workspaceIndexes = M.fromList $ zip myWorkspaces [1..]
+          index = fromJust $ M.lookup ws workspaceIndexes
 
 myNormalBorderColor :: String
 myNormalBorderColor  = "#1E2428"
@@ -115,15 +129,86 @@ styledPrompt promptMsg = def { font = "xft:Hasklug Nerd Font Mono:weight=bold:pi
                              , maxComplRows = Just 6
                              }
 
-searchEngineMap method = M.fromList
-    [ ((0, xK_g), method S.google)
-    , ((0, xK_h), method S.hoogle)
-    , ((0, xK_i), method S.images)
-    , ((0, xK_m), method S.maps)
-    , ((0, xK_s), method $ S.searchEngine "splice" "https://splice.com/sounds/search?q=")
-    , ((0, xK_w), method S.wikipedia)
-    , ((0, xK_y), method S.youtube)
+-- TODO these should be persisted somewhere
+myRepos :: [String]
+myRepos = [ "dotfiles"
+          , "hangman"
+          , "haskell-programming-from-first-principles"
+          , "nvcode-color-schemes.vim"
+          , "rate-repository-app"
+          , "apollo-graphql-library"
+          , "ultimate-hooks"
+          , "bloglist-frontend"
+          , "unicafe-redux"
+          , "anecdotes-redux"
+          , "bloglist"
+          , "ferdybot"
+          , "helsinki-full-stack"
+          , "briscola"
+          , "phonebook"
+          , "helsinki-full-stack-exercises"
+          ]
+
+myYoutubePlaylists :: M.Map String String
+myYoutubePlaylists = M.fromList
+    [ ("Watch Later", "WL")
+    , ("oncode", "PLhLV2yWt3oZoL_aPcTR0EeBfuVEJ9D_r2")
+    , ("sassi", "PLhLV2yWt3oZqeaba9fNNOM08ffzTCqhV6")
+    , ("scavi", "PLhLV2yWt3oZoicsLvk1tm3pqSok5AVK4b")
+    , ("Favorites", "FLhGrNvsmJwVyNVl-IW4sm-Q")
+    , ("scarufficore", "PLhLV2yWt3oZpVIlQ8wcE0xPeViagBKHWt")
+    , ("pazzesco", "PLhLV2yWt3oZrcS_2hO-OC6ikF1O0ih41-")
+    , ("Full NGRX Course 2020", "PLV-DQnYj14bRFWMmuT6ptSL4v5fxMJnOS")
+    , ("Monoscopio RAI - Musica anni 60 e 70 restaurata per TelstarWeb", "PLVQgz4PvtVx32jQ9xAwxDhHcsiJs5Wsfu")
+    , ("ZOMG ZUFALL!!!", "PLhLV2yWt3oZogxBIX5f0OEf2SXTRNFlB7")
     ]
+
+myDmenuFont :: String
+myDmenuFont = "Hasklug Nerd Font Mono"
+
+myCenterDMonad :: MonadIO m => String -> String -> [String] -> m String
+myCenterDMonad promptMsg historyFile = D.menuArgs "dmenu" ["-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", promptMsg, "-H", historyFile, "-x", "540", "-y", "290", "-z", "900"]
+
+myInlineDMonad :: MonadIO m => String -> String -> [String] -> m String
+myInlineDMonad promptMsg historyFile = D.menuArgs "dmenu" ["-i", "-h", "30", "-fn", myDmenuFont, "-p", promptMsg, "-H", historyFile, "-x", "500", "-y", "440", "-z", "900"]
+
+myDialogDMonad :: MonadIO m => String -> [String] -> m String
+myDialogDMonad promptMsg = D.menuArgs "dmenu" ["-i", "-h", "30", "-fn", myDmenuFont, "-p", promptMsg, "-x", "500", "-y", "440", "-z", "900"]
+
+-- TODO functions written with `do` notation don't work properly when they're set as a result of a submap-key combination. Why????
+myDmenuPrompt :: MonadIO m => m String -> (String -> m ()) -> m ()
+myDmenuPrompt dmenuM process =
+    do
+      selection <- dmenuM
+      unless (all isSpace selection) $ process selection
+
+browseMyGitHubRepos :: X ()
+browseMyGitHubRepos = myDmenuPrompt (myCenterDMonad "Open GitHub Repo:" githubHistory myRepos) searchGitHub
+    where githubHistory = "/home/freestingo/Documents/suckless/dmenu-5.0/histfile-github"
+          searchGitHub repo | repo `elem` myRepos = safeSpawn "qutebrowser" ["https://github.com/freestingo/" ++ repo]
+                            | otherwise           = safeSpawn "qutebrowser" ["https://github.com/search?q=" ++ repo]
+
+searchPrompt :: String -> String -> X ()
+searchPrompt website url = myDmenuPrompt suggestHistory doSearch
+        where suggestHistory = do
+                                 suggestions <- runProcessWithInput "cat" [historyFile] ""
+                                 myCenterDMonad promptMsg historyFile . reverse . lines $ suggestions
+              promptMsg = "Search on " ++ website ++ ":"
+              historyFile = "/home/freestingo/Documents/suckless/dmenu-5.0/histfile-" ++ map toLower website
+              doSearch = safeSpawn "qutebrowser" . return . (url ++)
+
+browseYTPlaylists :: X ()
+browseYTPlaylists = myDmenuPrompt (myCenterDMonad "Open YouTube playlist:" ytPlaylistHistory $ M.keys myYoutubePlaylists) handlePlaylist
+    where ytPlaylistHistory = "/home/freestingo/Documents/suckless/dmenu-5.0/histfile-ytplaylists"
+          handlePlaylist name = case M.lookup name myYoutubePlaylists of
+            (Just n) -> safeSpawn "qutebrowser" ["https://www.youtube.com/playlist?list=" ++ n]
+            Nothing -> myDmenuPrompt (myDialogDMonad ("Playlist '" ++ name ++ "' not found!") ["Ok"]) (return . const ())
+
+confirmLogout :: X ()
+confirmLogout = do
+    result <- D.menuArgs "dmenu" ["-c", "-i", "-h", "30", "-fn", myDmenuFont, "-p", "Confirm logout?"] ["No", "Yes"]
+    when (result == "Yes") $ io exitSuccess
+
 
 ------------------------------------------------------------------------
 -- KEY BINDINGS
@@ -134,13 +219,16 @@ myKeysOldSyntax conf@XConfig { XMonad.modMask = modm } = M.fromList $
     [ ((modm .|. shiftMask, xK_Return), spawn $ XMonad.terminal conf)
 
     -- launch dmenu
-    , ((modm, xK_p), spawn "dmenu_run")
+    , ((modm, xK_p), spawn $ unwords [ "dmenu_run"
+                                     , "-c -l 10 -h 30"
+                                     , "-fn \"Hasklug Nerd Font Mono\""
+                                     , "-hp pavucontrol,dbeaver-ce,gnome-terminal,chromium,qutebrowser,poweroff"
+                                     , "-H ~/Documents/suckless/dmenu-5.0/histfile"
+                                     ]
+      )
 
     -- -- launch gmrun
     -- , ((modm .|. shiftMask, xK_p), spawn "gmrun")
-
-    -- Search commands
-    , ((modm, xK_s), SM.submap $ searchEngineMap $ S.promptSearch $ styledPrompt "Search: ")
 
     -- close focused window
     , ((modm .|. shiftMask, xK_c), kill)
@@ -181,8 +269,8 @@ myKeysOldSyntax conf@XConfig { XMonad.modMask = modm } = M.fromList $
     -- Deincrement the number of windows in the master area
     , ((modm              , xK_period), sendMessage (IncMasterN (-1)))
 
-    -- Quit xmonad
-    , ((modm .|. shiftMask, xK_q     ), io exitSuccess)
+    -- Quit xmonad (logout)
+    , ((modm .|. shiftMask, xK_q     ), confirmLogout)
 
     -- Restart xmonad
     , ((modm              , xK_q     ), spawn "xmonad --recompile; xmonad --restart")
@@ -229,14 +317,16 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-w", switchProjectPrompt switchWorkspacePrompt)
     -- Prompts for a project name and then shifts the currently focused window to that project
     , ("M-S-w", shiftToProjectPrompt shiftToWorkspacePrompt)
+    -- Run project startup-hook
+    , ("M-s", bindOn [("oncode", startOncode), ("npo", startNpo), ("chat", startChat), ("skype", startSkype)])
     -- Remove the current workspace
     , ("M-d", removeWorkspace)
     -- Prompt for a workspace and remove it
     , ("M-S-d", withWorkspace deleteWorkspacePrompt removeWorkspaceByTag)
     -- Go to workspace of chosen window
-    , ("M-b", gotoMenu)
+    , ("M-b", gotoMenuArgs ["-c", "-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", "Go to window:"])
     -- Bring chosen window to current workspace
-    , ("M-S-b", bringMenu)
+    , ("M-S-b", bringMenuArgs ["-c", "-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", "Fetch window:"])
     -- Move mouse cursor to a corner of the focused window
     , ("M-S-p", banish LowerRight)
     -- Open terminal scratchpad
@@ -253,6 +343,20 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-S-x", spawn $ myBrowser ++ " -private")
     -- Open Chromium
     , ("M-c", spawn "chromium")
+    -- Search on Google
+    , ("M-C-g", searchPrompt "Google" "https://www.google.com/search?channel=fs&client=ubuntu&q=")
+    -- Search on YouTube
+    , ("M-C-y", searchPrompt "YouTube" "http://www.youtube.com/results?search_type=search_videos&search_query=")
+    -- Browse saved YouTube playlists
+    , ("M-C-p", browseYTPlaylists)
+    -- Search on Wikipedia
+    , ("M-C-w", searchPrompt "Wikipedia" "http://en.wikipedia.org/wiki/Special:Search?go=Go&search=")
+    -- Search Splice samples
+    , ("M-C-s", searchPrompt "Splice" "https://splice.com/sounds/search?q=")
+    -- Search on Netflix
+    , ("M-C-n", searchPrompt "Netflix" "https://www.netflix.com/search?q=")
+    -- Browse my GitHub repos
+    , ("M-C-r", browseMyGitHubRepos)
     -- Increase brightness level for laptop screen
     , ("<XF86MonBrightnessUp>", spawn "lux -a 5%")
     -- Decrease brightness level for laptop screen
@@ -342,16 +446,21 @@ myLayout = screenCornerLayoutHook
 -- To match on the WM_NAME, you can use 'title' in the same way that
 -- 'className' and 'resource' are used below.
 --
-myManageHook = composeAll
-    [ className =? "MPlayer"                      --> doFloat
-    , className =? "Gimp"                         --> doFloat
-    , className =? "Skype"                        --> doShift "skype"
-    , className =? "Java"                         --> doFloat
-    , title     =? "Microsoft Teams Notification" --> doSideFloat NC
-    -- , isFullscreen                                --> myDoFullFloat
-    , resource  =? "desktop_window"               --> doIgnore
-    , resource  =? "kdesktop"                     --> doIgnore
-    ] <+> namedScratchpadManageHook myScratchpads
+-- Check also https://wiki.haskell.org/Xmonad/General_xmonad.hs_config_tips
+myManageHook = composeAll (concat
+    [
+      [ className =? "Skype"                        --> doShift "skype" ]
+    , [ className =? "qutebrowser"                  --> viewShift "web" ]
+    , [ title     =? "Microsoft Teams Notification" --> doSideFloat NC ]
+    , [ className =? fc                             --> doFloat | fc <- myFloatClasses ]
+    , [ resource  =? fr                             --> doFloat | fr <- myFloatResources ]
+    , [ resource  =? ir                             --> doIgnore | ir <- myIgnoreResources ]
+    ])
+    <+> namedScratchpadManageHook myScratchpads
+      where viewShift = doF . liftM2 (.) W.greedyView W.shift
+            myFloatClasses = ["Mplayer", "Gimp", "Skype", "Java"]
+            myFloatResources = ["Dialog"]
+            myIgnoreResources = ["desktop_window", "kdesktop"]
 
 ------------------------------------------------------------------------
 -- Event handling
@@ -408,27 +517,41 @@ projects :: [Project]
 projects =
     [ Project { projectName = "web"
               , projectDirectory = "~/Downloads/"
-              , projectStartHook = Just $ do spawn myBrowser
+              , projectStartHook = Nothing
               }
     , Project { projectName = "oncode"
               , projectDirectory = "~/Documents/oncode/"
-              , projectStartHook = Just $ do spawn "chromium --new-window teams.microsoft.com"
-                                             spawn "chromium --new-window outlook.office.com/mail/inbox"
+              , projectStartHook = Nothing
               }
     , Project { projectName = "npo"
               , projectDirectory = "~/Documents/oncode/projects/npo/"
-              , projectStartHook = Just $ do spawn "teams"
-                                             spawn $ myBrowser ++ " -new-window outlook.office.com/mail/inbox"
+              , projectStartHook = Nothing
               }
     , Project { projectName = "chat"
               , projectDirectory = "~/"
-              , projectStartHook = Just $ do spawn $ myBrowser ++ " -new-window https://web.whatsapp.com/"
+              , projectStartHook = Nothing
               }
     , Project { projectName = "skype"
               , projectDirectory = "~/"
-              , projectStartHook = Just $ do spawn "skypeforlinux"
+              , projectStartHook = Nothing
               }
     ]
+
+startChat :: X ()
+startChat = spawn "firefox -new-window https://web.whatsapp.com/"
+
+startSkype :: X ()
+startSkype = spawn "skypeforlinux"
+
+startOncode :: X ()
+startOncode = do
+                spawn "chromium --new-window teams.microsoft.com"
+                spawn "chromium --new-window outlook.office.com/mail/inbox"
+
+startNpo :: X ()
+startNpo = do
+             spawn "teams"
+             spawn $ myBrowser ++ " -new-window outlook.office.com/mail/inbox"
 
 ------------------------------------------------------------------------
 
@@ -440,13 +563,13 @@ main = do
   xmonad $ dynamicProjects projects $ docks defaults {
       logHook = dynamicLogWithPP $ xmobarPP
           { ppOutput = \x -> hPutStrLn xmproc0 x >> hPutStrLn xmproc1 x
-          , ppCurrent = xmobarColor "#A6D67C" "" . wrap "[" "]" -- current workspace
-          , ppVisible = xmobarColor "#FCDF77" ""                -- visible but not current workspace
-          , ppHidden = xmobarColor "#C792EA" ""                 -- hidden workspaces with windows
-          , ppHiddenNoWindows = xmobarColor "#82AAFF" ""        -- hidden workspaces with no windows
-          , ppTitle = xmobarColor "#B3AFC2" "" . shorten 70     -- title of active window
-          , ppSep = "  "                                        -- separators
-          , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"  -- urgent workspace
+          , ppCurrent = xmobarColor "#A6D67C" "" . wrap "[" "]"         -- current workspace
+          , ppVisible = xmobarColor "#FCDF77" "" . clickable            -- visible but not current workspace
+          , ppHidden = xmobarColor "#C792EA" "" . clickable             -- hidden workspaces with windows
+          , ppHiddenNoWindows = xmobarColor "#82AAFF" "" . clickable    -- hidden workspaces with no windows
+          , ppTitle = xmobarColor "#B3AFC2" "" . shorten 70             -- title of active window
+          , ppSep = "  "                                                -- separators
+          , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"          -- urgent workspace
           }
     }
 
