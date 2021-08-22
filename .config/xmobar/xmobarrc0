@@ -7,7 +7,7 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
        , bgColor = "#1B1C22"
        , fgColor = "#D1D5DA"
        , alpha = 255
-       , position = Bottom
+       , position = Top
        , textOffset = 18
        , textOffsets = [21]
        , iconOffset = -1
@@ -18,7 +18,10 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
        , iconRoot = "."
        , allDesktops = True
        , overrideRedirect = True
-       , commands = [ Run Battery [ "-t", "<acstatus> <left>%"
+       , commands = [ Run Cpu ["-t", "<fn=1>\xf463</fn> <total>%"] 10
+                    , Run Memory ["-t", "<fn=1>\xf0c7</fn> <usedratio>%"] 10
+                    , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 60
+                    , Run Battery [ "-t", "<acstatus> <left>%"
                                   , "--"
                                   , "-o", "<fn=2>\xf580</fn>"
                                   , "-O", "<fn=2>\x26a1</fn>"
@@ -28,13 +31,11 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
                                   , "-p", "#67F07B"
                                   , "-A", "5"
                                   , "-a", "notify-send -u critical 'Battery about to run out! Put me on AC ASAP!!!!'"
-                                  ] 100
-                 -- , Run Cpu ["-t", "<fn=1>\xf463</fn> <total>%"] 10
-                 -- , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 10
+                      ] 10
                     , Run Date "<fc=#BAEFF6><fn=1>\xf133</fn> %a %d-%m-%Y</fc>  <fc=#C4E6F5><fn=1>\xf64f</fn> %H:%M</fc>" "date" 10
                     , Run UnsafeStdinReader
                     ]
        , sepChar = "%"
        , alignSep = "}{"
-       , template = " %UnsafeStdinReader% }{ <action=`gsimplecal` button=1>%date%</action>  <fc=#F6B6F0>%battery%</fc> "
+       , template = " %UnsafeStdinReader% }{ <action=`gsimplecal` button=1>%date%</action>  <fc=#F6B6F0>%battery%</fc>                      "
        }

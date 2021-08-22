@@ -40,6 +40,7 @@ import XMonad.Hooks.ScreenCorners
 import XMonad.Hooks.UrgencyHook
 import qualified XMonad.Layout.BoringWindows as BW
 import XMonad.Layout.ImageButtonDecoration
+import XMonad.Layout.IndependentScreens
 import XMonad.Layout.LimitWindows
 import XMonad.Layout.Minimize
 import XMonad.Layout.NoBorders
@@ -278,7 +279,7 @@ myKeysOldSyntax conf@XConfig { XMonad.modMask = modm } = M.fromList $
     -- mod-{k,j} -> Switch to physical/Xinerama screens 1 or 2
     -- mod-shift-{k,j} -> Move client to screen 1 or 2
  ++ [((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
-        | (key, sc) <- zip [xK_k, xK_j] [0..]
+        | (key, sc) <- zip [xK_j, xK_k] [0..]
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
 
 myKeysEZConfig conf = mkKeymap conf [
@@ -523,8 +524,9 @@ shiftToAndNotify ws = do
     combine event hooks use mappend or mconcat from Data.Monoid.
 -}
 
-myHandleEventHook = dynamicTitle myDynamicPropertyHook <+> (minimizeEventHook >> screenCornerEventHook)
-                    where myDynamicPropertyHook = composeAll [
+myHandleEventHook = dynamicTitle myDynamicPropertyHook
+                <+> (minimizeEventHook >> screenCornerEventHook)
+              where myDynamicPropertyHook = composeAll [
                                     (("WhatsApp Web" `isInfixOf`) <$> title)
                                <||> (("Telegram Web" `isInfixOf`) <$> title) --> shiftToAndNotify "chat"
                               ]
@@ -538,13 +540,9 @@ myHandleEventHook = dynamicTitle myDynamicPropertyHook <+> (minimizeEventHook >>
     See the 'XMonad.Hooks.DynamicLog' extension for examples.
 -}
 
-myLogHook = do
-              xmobarTop <- getNamedPipe "xmobar-top"
-              xmobarBottom <- getNamedPipe "xmobar-bottom"
-              dynamicLogWithPP $ xmobarPP
-                  { ppOutput = \x -> maybe (return . const ()) hPutStrLn xmobarTop x
-                                  >> maybe (return . const ()) hPutStrLn xmobarBottom x
-                  , ppCurrent = xmobarColor "#A6D67C" "" . wrap "[" "]"         -- current workspace
+myLogHook = multiPP focusPP unfocusPP
+    where focusPP = xmobarPP
+                  { ppCurrent = xmobarColor "#A6D67C" "" . wrap "[" "]"         -- current workspace
                   , ppVisible = xmobarColor "#FCDF77" "" . clickable            -- visible but not current workspace
                   , ppHidden = xmobarColor "#C792EA" "" . clickable             -- hidden workspaces with windows
                   , ppHiddenNoWindows = xmobarColor "#82AAFF" "" . clickable    -- hidden workspaces with no windows
@@ -552,6 +550,7 @@ myLogHook = do
                   , ppSep = "  "                                                -- separators
                   , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"          -- urgent workspace
                   }
+          unfocusPP = focusPP
 
 ------------------------------------------------------------------------
 
@@ -566,8 +565,6 @@ myLogHook = do
 -}
 
 myStartupHook = do
-        xmobarTop <- spawnNamedPipe "xmobar -x 0 /home/freestingo/.config/xmobar/xmobarrc0" "xmobar-top"
-        xmobarBottom <- spawnNamedPipe "xmobar -x 1 /home/freestingo/.config/xmobar/xmobarrc1" "xmobar-bottom"
         spawnOnce "nitrogen --restore &"
         spawnOnce $ "picom --experimental-backends"
                  ++ " --blur-background --blur-method gaussian --blur-kern 11x11gaussian"
@@ -579,15 +576,21 @@ myStartupHook = do
         spawnOnce "volumeicon &"
         spawnOnce "pasystray &"
         spawnOnce "trayer --edge top --align right --widthtype request --padding 5 --SetDockType true --SetPartialStrut false --expand true --monitor 1 --transparent true --alpha 0 --tint 0x1b1c22 --height 25"
+        dynStatusBarStartup dynXmobar (return ())
         setWMName "LG3D"
         setDefaultCursor xC_left_ptr -- never show `X` shaped pointer, but use normal arrow pointer instead
         -- addScreenCorners [ (SCLowerRight, nextWS)
         --                  , (SCLowerLeft, prevWS)
         --                  ]
 
--- dynXmobar :: ScreenId -> IO Handle
--- dynXmobar (S i) = spawnPipe $ "xmobar -x " ++ monitor ++ " /home/freestingo/.config/xmobar/xmobarrc" ++ monitor
---     where monitor = show i
+dynXmobar :: ScreenId -> IO Handle
+dynXmobar (S i) = do
+                             -- debugging utilities
+                             -- spawn $ "notify-send -u low \"screenID: " ++ monitor ++ "\""
+                             -- spawn $ "notify-send -u low \"pipeCmd: " ++ pipeCmd ++ "\""
+                             spawnPipe pipeCmd
+                       where monitor = show i
+                             pipeCmd = "xmobar -x " ++ monitor ++ " /home/freestingo/.config/xmobar/xmobarrc" ++ monitor
 
 ------------------------------------------------------------------------
 
