@@ -82,7 +82,11 @@ import qualified Data.Map        as M
     home-grown variables for easy config editing and wellness
 -}
 
+myTerminal :: String
 myTerminal = "alacritty"
+
+myBrowser :: String
+myBrowser = "firefox"
 
 myFocusFollowsMouse :: Bool
 myFocusFollowsMouse = True
@@ -98,7 +102,16 @@ myBorderWidth = 4
 myModMask = mod1Mask
 
 myWorkspaces :: [String]
-myWorkspaces = ["code","front","back","web","oncode","npo","chat","skype","fun"]
+myWorkspaces = [ "code"
+               , "front"
+               , "back"
+               , "web"
+               , "oncode"
+               , "npo"
+               , "chat"
+               , "skype"
+               , "fun"
+               ]
 
 clickable :: String -> String
 clickable ws = "<action=xdotool key alt+" ++ show index ++ ">" ++ ws ++ "</action>"
@@ -117,9 +130,7 @@ myGridSelectConfig = def { gs_font = "xft:Hasklug Nerd Font Mono:pixelsize=16:an
                          , gs_cellwidth = 100
                          }
 
-myBrowser :: String
-myBrowser = "firefox"
-
+myScratchpads :: [NamedScratchpad]
 myScratchpads = [ NS "terminal" spawnTerminal findTerminal manageTerminal
                 , NS "todo" spawnTodo findTodo manageTodo
                 ]
@@ -533,14 +544,15 @@ myLayout = screenCornerLayoutHook
 
 myManageHook = composeAll (concat
     [
-      [ className =? "Skype"                        --> doShift "skype" ]
-    , [ isDialog                                    --> doSideFloat C ]
-    , [ className =? fc                             --> doCenterFloat | fc <- myFloatClasses ]
-    , [ resource  =? ir                             --> doIgnore | ir <- myIgnoreResources ]
+      [ className =? "Skype"    --> doShift "skype" ]
+    , [ isDialog                --> doSideFloat C ]
+    , [ className =? fc         --> doCenterFloat | fc <- myFloatClasses ]
+    , [ className =? rfc        --> doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7) | rfc <- myResizeFloatClasses ]
+    , [ resource  =? ir         --> doIgnore | ir <- myIgnoreResources ]
     ])
     <+> namedScratchpadManageHook myScratchpads
-      where skypePopupSize = "program specified minimum size: 207 by 207"
-            myFloatClasses = ["Mplayer", "Gimp", "Java", "Pavucontrol", "Gnome-calculator"]
+      where myFloatClasses = ["Mplayer", "Gimp", "Java", "Pavucontrol", "Gnome-calculator", "Org.gnome.Nautilus"]
+            myResizeFloatClasses = ["VirtualBox Manager"]
             myIgnoreResources = ["desktop_window", "kdesktop"]
             --viewShift = doF . liftM2 (.) W.greedyView W.shift
 
