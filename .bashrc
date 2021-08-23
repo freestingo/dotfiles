@@ -124,3 +124,4 @@ alias dots='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 
 # load autojump (j)
 . /usr/share/autojump/autojump.bash
+. "$HOME/.cargo/env"
