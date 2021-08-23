@@ -6,35 +6,46 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Monoid
+import Control.Applicative (liftA2)
 import Control.Monad
 import Graphics.X11.ExtraTypes.XF86
 import System.Exit
+import System.IO (Handle)
 import XMonad.Actions.DynamicProjects
 import XMonad.Actions.DynamicWorkspaces
-import XMonad.Actions.CopyWindow(copy)
+import XMonad.Actions.CopyWindow (copy)
 import XMonad.Actions.CycleWS
 import XMonad.Actions.FloatSnap
 import qualified XMonad.Actions.FlexibleManipulate as Flex
 import qualified XMonad.Actions.FlexibleResize as Flex
 import XMonad.Actions.GridSelect
+import XMonad.Actions.GroupNavigation
 import XMonad.Actions.Minimize
 import XMonad.Actions.PerWorkspaceKeys
+import XMonad.Actions.RotSlaves
 import XMonad.Actions.Search as S
+import XMonad.Actions.SpawnOn
 import XMonad.Actions.Submap as SM
 import XMonad.Actions.Warp
 import XMonad.Actions.WindowBringer
 import XMonad.Actions.WindowGo
+import XMonad.Hooks.DynamicBars
 import XMonad.Hooks.DynamicLog
+import XMonad.Hooks.DynamicProperty
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.Minimize
 import XMonad.Hooks.ManageHelpers
 import XMonad.Hooks.SetWMName
 import XMonad.Hooks.ScreenCorners
+import XMonad.Hooks.UrgencyHook
 import qualified XMonad.Layout.BoringWindows as BW
+import XMonad.Layout.ImageButtonDecoration
 import XMonad.Layout.LimitWindows
 import XMonad.Layout.Minimize
 import XMonad.Layout.NoBorders
+import XMonad.Layout.PerWorkspace
 import XMonad.Layout.Renamed
+import XMonad.Layout.Simplest
 import XMonad.Layout.Tabbed
 import XMonad.Prompt
 import XMonad.Prompt.ConfirmPrompt
@@ -42,20 +53,27 @@ import XMonad.Prompt.Theme
 import XMonad.Prompt.Unicode
 import XMonad.Util.Cursor
 import qualified XMonad.Util.Dmenu as D
+import qualified XMonad.Util.Dzen as DZ
 import XMonad.Util.EZConfig
 import XMonad.Util.Loggers
 import XMonad.Util.NamedScratchpad
+import qualified XMonad.Util.Paste as P
 import XMonad.Util.SpawnOnce
 import XMonad.Util.Themes
 import XMonad.Util.Run
+import XMonad.Util.SpawnNamedPipe
+import XMonad.Util.WindowState
 
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
 
 
 ------------------------------------------------------------------------
--- FREE-RANGE VARIABLES
--- home-grown variables for easy config editing and wellness
+
+{-|
+    FREE-RANGE VARIABLES
+    home-grown variables for easy config editing and wellness
+-}
 
 myTerminal = "alacritty"
 
@@ -92,9 +110,6 @@ myGridSelectConfig = def { gs_font = "xft:Hasklug Nerd Font Mono:pixelsize=16:an
                          , gs_cellwidth = 100
                          }
 
--- myDoFullFloat :: ManageHook
--- myDoFullFloat = doF W.focusDown <+> doFullFloat
-
 myBrowser :: String
 myBrowser = "firefox"
 
@@ -128,6 +143,14 @@ styledPrompt promptMsg = def { font = "xft:Hasklug Nerd Font Mono:weight=bold:pi
                              , defaultPrompter = const promptMsg
                              , maxComplRows = Just 6
                              }
+
+myEmails :: M.Map String [(KeyMask, Char)]
+myEmails = M.fromList
+         . zip ["personal", "oncode", "npo"]
+         . (fmap . fmap) toKeyBind
+         $ ["n.traini1@yahoo.it", "nicolo.traini@oncode.it", "nicolo.traini@nposervices.com"]
+           where toKeyBind c | c == '@'  = (mod5Mask, 'ò')
+                             | otherwise = (noModMask, c)
 
 -- TODO these should be persisted somewhere
 myRepos :: [String]
@@ -163,8 +186,31 @@ myYoutubePlaylists = M.fromList
     , ("ZOMG ZUFALL!!!", "PLhLV2yWt3oZogxBIX5f0OEf2SXTRNFlB7")
     ]
 
+myDzenFont :: String
+myDzenFont = "Hasklug Nerd Font Mono"
+
+myDzenConfig :: DZ.DzenConfig
+myDzenConfig = DZ.onCurr (DZ.center 500 55)
+           >=> DZ.font myDzenFont
+           >=> DZ.bgColor "#1B1C22"
+           >=> DZ.fgColor "#D1D5DA"
+           >=> DZ.timeout 2
+
 myDmenuFont :: String
 myDmenuFont = "Hasklug Nerd Font Mono"
+
+myDmenuFavorites :: String
+myDmenuFavorites = "pavucontrol,dbeaver-ce,gnome-terminal,chromium,qutebrowser,nautilus,poweroff"
+
+-- utility function for escaping characters in strings destined to be arguments to terminal commands
+safeArg :: String -> String
+safeArg = ("\"" ++) . (++ "\"")
+
+safeArgs :: [String] -> String
+safeArgs = unwords . map safeArg
+
+dmenuSearch :: String
+dmenuSearch = "firefox -new-window "
 
 myCenterDMonad :: MonadIO m => String -> String -> [String] -> m String
 myCenterDMonad promptMsg historyFile = D.menuArgs "dmenu" ["-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", promptMsg, "-H", historyFile, "-x", "540", "-y", "290", "-z", "900"]
@@ -175,133 +221,103 @@ myInlineDMonad promptMsg historyFile = D.menuArgs "dmenu" ["-i", "-h", "30", "-f
 myDialogDMonad :: MonadIO m => String -> [String] -> m String
 myDialogDMonad promptMsg = D.menuArgs "dmenu" ["-i", "-h", "30", "-fn", myDmenuFont, "-p", promptMsg, "-x", "500", "-y", "440", "-z", "900"]
 
--- TODO functions written with `do` notation don't work properly when they're set as a result of a submap-key combination. Why????
-myDmenuPrompt :: MonadIO m => m String -> (String -> m ()) -> m ()
-myDmenuPrompt dmenuM process =
+-- TODO functions written with `do` notation don't work properly when they're set
+--      as a result of a submap-key combination. Why?
+-- TODO the xdotool trick to switch to the `web` workspace is beyond stupid.
+--      I haven't yet found another way to just spawn windows on arbitrary workspaces
+--      (spoiler: `spawnOn` or `spawnAndDo` do not work).
+myDmenuPrompt :: MonadIO m => m String -> String -> (String -> m ()) -> m ()
+myDmenuPrompt dmenuM destinationWs process =
     do
       selection <- dmenuM
-      unless (all isSpace selection) $ process selection
+      unless (all isSpace selection) $ spawn ("xdotool key alt+" ++ show destWsIndex) >> process selection
+          where destWsIndex = fromJust . M.lookup destinationWs . M.fromList . zip myWorkspaces $ [1..]
 
+-- TODO for some reason, safeSpawn won't work when `FilePath` features parameters. Why?????
 browseMyGitHubRepos :: X ()
-browseMyGitHubRepos = myDmenuPrompt (myCenterDMonad "Open GitHub Repo:" githubHistory myRepos) searchGitHub
+browseMyGitHubRepos = myDmenuPrompt (myCenterDMonad "Open GitHub Repo:" githubHistory myRepos) "web" searchGitHub
     where githubHistory = "/home/freestingo/Documents/suckless/dmenu-5.0/histfile-github"
-          searchGitHub repo | repo `elem` myRepos = safeSpawn "qutebrowser" ["https://github.com/freestingo/" ++ repo]
-                            | otherwise           = safeSpawn "qutebrowser" ["https://github.com/search?q=" ++ repo]
+          searchGitHub repo | repo `elem` myRepos = spawn $ dmenuSearch ++ safeArg ("https://github.com/freestingo/" ++ repo)
+                            | otherwise           = spawn $ dmenuSearch ++ safeArg ("https://github.com/search?q=" ++ repo)
 
 searchPrompt :: String -> String -> X ()
-searchPrompt website url = myDmenuPrompt suggestHistory doSearch
+searchPrompt website url = myDmenuPrompt suggestHistory "web" doSearch
         where suggestHistory = do
                                  suggestions <- runProcessWithInput "cat" [historyFile] ""
                                  myCenterDMonad promptMsg historyFile . reverse . lines $ suggestions
               promptMsg = "Search on " ++ website ++ ":"
               historyFile = "/home/freestingo/Documents/suckless/dmenu-5.0/histfile-" ++ map toLower website
-              doSearch = safeSpawn "qutebrowser" . return . (url ++)
+              doSearch = spawn . (dmenuSearch ++) . safeArg . (url ++)
 
 browseYTPlaylists :: X ()
-browseYTPlaylists = myDmenuPrompt (myCenterDMonad "Open YouTube playlist:" ytPlaylistHistory $ M.keys myYoutubePlaylists) handlePlaylist
+browseYTPlaylists = myDmenuPrompt (myCenterDMonad "Open YouTube playlist:" ytPlaylistHistory $ M.keys myYoutubePlaylists) "web" handlePlaylist
     where ytPlaylistHistory = "/home/freestingo/Documents/suckless/dmenu-5.0/histfile-ytplaylists"
           handlePlaylist name = case M.lookup name myYoutubePlaylists of
-            (Just n) -> safeSpawn "qutebrowser" ["https://www.youtube.com/playlist?list=" ++ n]
-            Nothing -> myDmenuPrompt (myDialogDMonad ("Playlist '" ++ name ++ "' not found!") ["Ok"]) (return . const ())
+            (Just n) -> spawn $ dmenuSearch ++ safeArg ("https://www.youtube.com/playlist?list=" ++ n)
+            Nothing -> do
+                         myCurrentWs <- withWindowSet (pure . W.currentTag)
+                         myDmenuPrompt (myDialogDMonad ("Playlist '" ++ name ++ "' not found!") ["Ok"]) myCurrentWs (return . const ())
 
 confirmLogout :: X ()
 confirmLogout = do
     result <- D.menuArgs "dmenu" ["-c", "-i", "-h", "30", "-fn", myDmenuFont, "-p", "Confirm logout?"] ["No", "Yes"]
     when (result == "Yes") $ io exitSuccess
 
-
 ------------------------------------------------------------------------
--- KEY BINDINGS
+
+myKeys :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
+myKeys = liftA2 (<+>) myKeysOldSyntax myKeysEZConfig
 
 myKeysOldSyntax conf@XConfig { XMonad.modMask = modm } = M.fromList $
-
-    -- launch a terminal
-    [ ((modm .|. shiftMask, xK_Return), spawn $ XMonad.terminal conf)
-
-    -- launch dmenu
-    , ((modm, xK_p), spawn $ unwords [ "dmenu_run"
-                                     , "-c -l 10 -h 30"
-                                     , "-fn \"Hasklug Nerd Font Mono\""
-                                     , "-hp pavucontrol,dbeaver-ce,gnome-terminal,chromium,qutebrowser,poweroff"
-                                     , "-H ~/Documents/suckless/dmenu-5.0/histfile"
-                                     ]
-      )
-
-    -- -- launch gmrun
-    -- , ((modm .|. shiftMask, xK_p), spawn "gmrun")
-
-    -- close focused window
-    , ((modm .|. shiftMask, xK_c), kill)
-
-     -- Rotate through the available layout algorithms
-    , ((modm, xK_space), sendMessage NextLayout)
-
-    --  Reset the layouts on the current workspace to default
-    , ((modm .|. shiftMask, xK_space), setLayout $ XMonad.layoutHook conf)
-
-    -- Resize viewed windows to the correct size
-    , ((modm, xK_n), refresh)
-
-    -- Move focus to the next window
-    , ((modm, xK_Tab), windows W.focusDown)
-
-    -- Move focus to the previous window
-    , ((modm .|. shiftMask, xK_Tab), windows W.focusUp)
-
-    -- -- Move focus to the master window
-    -- , ((modm, xK_m), windows W.focusMaster)
-
-    -- Swap the focused window and the master window
-    , ((modm, xK_Return), windows W.swapMaster)
-
-    -- -- Swap the focused window with the next window
-    -- , ((modm .|. shiftMask, xK_j     ), windows W.swapDown  )
-
-    -- -- Swap the focused window with the previous window
-    -- , ((modm .|. shiftMask, xK_k     ), windows W.swapUp    )
-
-    -- Push window back into tiling
-    , ((modm,               xK_t     ), withFocused $ windows . W.sink)
-
-    -- Increment the number of windows in the master area
-    , ((modm              , xK_comma ), sendMessage (IncMasterN 1))
-
-    -- Deincrement the number of windows in the master area
-    , ((modm              , xK_period), sendMessage (IncMasterN (-1)))
-
-    -- Quit xmonad (logout)
-    , ((modm .|. shiftMask, xK_q     ), confirmLogout)
-
-    -- Restart xmonad
-    , ((modm              , xK_q     ), spawn "xmonad --recompile; xmonad --restart")
-
-    -- Run xmessage with a summary of the default keybindings (useful for beginners)
-    , ((modm .|. shiftMask, xK_slash ), spawn ("echo \"" ++ help ++ "\" | xmessage -file -"))
-    ]
-    ++
-
-    --
     -- mod-[1..9], Switch to workspace N
     -- mod-shift-[1..9], Move client to workspace N
-    --
     [((m .|. modm, k), windows $ f i)
         | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
         , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
-    ++
 
-    --
     -- mod-{k,j} -> Switch to physical/Xinerama screens 1 or 2
     -- mod-shift-{k,j} -> Move client to screen 1 or 2
-    --
-    [((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
+ ++ [((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
         | (key, sc) <- zip [xK_k, xK_j] [0..]
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
 
-myKeysNewSyntax c = mkKeymap c [
+myKeysEZConfig conf = mkKeymap conf [
+    -- Launch a terminal
+      ("M-S-<Return>", spawn $ XMonad.terminal conf)
+    -- Launch dmenu
+    , ("M-p", spawn $ unwords [ "dmenu_run"
+                              , "-c -l 10 -h 30"
+                              , "-fn " ++ safeArg myDmenuFont
+                              , "-hp " ++ myDmenuFavorites
+                              , "-H ~/Documents/suckless/dmenu-5.0/histfile"
+                              ]
+      )
+    -- Close focused window
+    , ("M-S-c", kill)
+    -- Move focus to the next non-boring window
+    , ("M-<Tab>", BW.focusDown)
+    -- Move focus to the previous non-boring window
+    , ("M-S-<Tab>", BW.focusUp)
+    -- Swap the focused window and the master window
+    , ("M-<Return>", windows W.swapMaster)
+    -- Push window back into tiling
+    , ("M-t", withFocused $ windows . W.sink)
+    -- Increment the number of windows in the master area
+    , ("M-,", sendMessage (IncMasterN 1))
+    -- Deincrement the number of windows in the master area
+    , ("M-.", sendMessage (IncMasterN (-1)))
+    -- Quit xmonad (logout)
+    , ("M-S-q", confirmLogout)
+    -- Restart xmonad
+    , ("M-q", spawn "xmonad --recompile; xmonad --restart")
     -- Go to next workspace
-      ("M-l", nextWS)
+    , ("M-l", nextWS)
     -- Go to previous workspace
     , ("M-h", prevWS)
+    -- Rotate through the available layout algorithms
+    , ("M-<Space>", sendMessage NextLayout)
+    -- Reset the layouts on the current workspace to default
+    , ("M-C-<Space>", setLayout $ XMonad.layoutHook conf)
     -- Shrink the master area
     , ("M--", sendMessage Shrink)
     -- Expand the master area
@@ -312,13 +328,23 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-S-m", withLastMinimized maximizeWindowAndFocus)
     -- Toggle actual full-screen mode (windows will overlap xmobar)
     , ("M-f", sendMessage ToggleStruts)
+    -- Go to next window with the same class name as the focused one
+    , ("M-n", nextMatchWithThis Forward className)
+    -- Go to previous window with the same class name as the focused one
+    , ("M-S-n", nextMatchWithThis Backward className)
+    -- Rotate slave windows up (useful when combined with `limitWindows`)
+    , ("M-r", rotSlavesUp)
+    -- Rotate slave windows down
+    , ("M-S-r", rotSlavesDown)
+    -- Rotate all windows up
+    , ("M-C-r", rotAllUp)
     -- Prompt for a project name and then switch to it;
     -- Automatically creates a project if a new name is returned from the prompt
     , ("M-w", switchProjectPrompt switchWorkspacePrompt)
     -- Prompts for a project name and then shifts the currently focused window to that project
     , ("M-S-w", shiftToProjectPrompt shiftToWorkspacePrompt)
     -- Run project startup-hook
-    , ("M-s", bindOn [("oncode", startOncode), ("npo", startNpo), ("chat", startChat), ("skype", startSkype)])
+    , ("M-s", bindOn myProjectStartHooks)
     -- Remove the current workspace
     , ("M-d", removeWorkspace)
     -- Prompt for a workspace and remove it
@@ -328,7 +354,7 @@ myKeysNewSyntax c = mkKeymap c [
     -- Bring chosen window to current workspace
     , ("M-S-b", bringMenuArgs ["-c", "-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", "Fetch window:"])
     -- Move mouse cursor to a corner of the focused window
-    , ("M-S-p", banish LowerRight)
+    , ("M-S-p", banishScreen LowerRight)
     -- Open terminal scratchpad
     , ("M-S-s", namedScratchpadAction myScratchpads "terminal")
     -- Open todo scratchpad
@@ -345,6 +371,8 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-c", spawn "chromium")
     -- Search on Google
     , ("M-C-g", searchPrompt "Google" "https://www.google.com/search?channel=fs&client=ubuntu&q=")
+    -- Browse my GitHub repos
+    , ("M-C-S-g", browseMyGitHubRepos)
     -- Search on YouTube
     , ("M-C-y", searchPrompt "YouTube" "http://www.youtube.com/results?search_type=search_videos&search_query=")
     -- Browse saved YouTube playlists
@@ -355,8 +383,6 @@ myKeysNewSyntax c = mkKeymap c [
     , ("M-C-s", searchPrompt "Splice" "https://splice.com/sounds/search?q=")
     -- Search on Netflix
     , ("M-C-n", searchPrompt "Netflix" "https://www.netflix.com/search?q=")
-    -- Browse my GitHub repos
-    , ("M-C-r", browseMyGitHubRepos)
     -- Increase brightness level for laptop screen
     , ("<XF86MonBrightnessUp>", spawn "lux -a 5%")
     -- Decrease brightness level for laptop screen
@@ -366,21 +392,30 @@ myKeysNewSyntax c = mkKeymap c [
     -- Decrease volume level
     , ("<XF86AudioLowerVolume>", spawn "pactl set-sink-volume @DEFAULT_SINK@ -1.5%")
     -- Take screenshot of all displays
-    , ("<Print>", spawn "scrot -e 'mv $f ~/Pictures/'")
+    , ("<Print>", spawn $ "scrot -e " ++ scrotCmd)
     -- Take screenshot of selected area
-    , ("M-<Print>", spawn "scrot --line style=solid,width=2,color=\"red\" --select -e 'mv $f ~/Pictures/'")
+    , ("M-<Print>", spawn $ "scrot --line style=solid,width=2,color=\"red\" --select -e " ++ scrotCmd)
     -- Take screenshot of currently focused window
-    , ("M-S-<Print>", spawn "scrot -u -e 'mv $f ~/Pictures/'")
+    , ("M-S-<Print>", spawn $ "scrot -u -e " ++ scrotCmd)
+    -- Paste my personal email address
+    , ("M-e p", mapM_ (uncurry P.pasteChar) $ fromJust $ M.lookup "personal" myEmails)
+    -- Paste my oncode email address
+    , ("M-e o", mapM_ (uncurry P.pasteChar) $ fromJust $ M.lookup "oncode" myEmails)
+    -- Paste my NPO email address
+    , ("M-e n", mapM_ (uncurry P.pasteChar) $ fromJust $ M.lookup "npo" myEmails)
   ]
-
-myKeys conf = myKeysNewSyntax conf <+> myKeysOldSyntax conf
+        where scrotCmd = "'notify-send -u low \"scrot\" \"Saved screenshot <b>\\\"screen_%y-%m-%d_$wx$h.png\\\"</b> to <b>~/Pictures</b>!\" & mv $f ~/Pictures/screen_%y-%m-%d_$wx$h.png'"
 
 ------------------------------------------------------------------------
--- Mouse bindings: default actions bound to mouse events
---
+
+{-|
+    Default actions bound to mouse events.
+    You may also bind events to the mouse scroll wheel (button4 and button5)
+-}
+
 myMouseBindings XConfig { XMonad.modMask = modm } = M.fromList
 
-    -- mod-button1, Set the window to floating mode and move by dragging
+    -- Set the window to floating mode and move by dragging
     [ ((modm, button1), \w -> focus w
                            >> mouseMoveWindow w
                            >> ifClick (snapMagicMove (Just 50) (Just 50) w))
@@ -389,109 +424,150 @@ myMouseBindings XConfig { XMonad.modMask = modm } = M.fromList
                                          >> mouseMoveWindow w
                                          >> ifClick (snapMagicResize [L,R,U,D] (Just 50) (Just 50) w))
 
-    -- mod-button2, Raise the window to the top of the stack
+    -- Raise the window to the top of the stack
     , ((modm, button2), \w -> focus w
                            >> windows W.shiftMaster)
 
-    -- mod-button3, Set the window to floating mode and resize by dragging
+    -- Set the window to floating mode and resize by dragging
     , ((modm, button3), \w -> focus w
                            >> Flex.mouseResizeWindow w >> windows W.shiftMaster)
-
-    -- you may also bind events to the mouse scroll wheel (button4 and button5)
     ]
 
 ------------------------------------------------------------------------
--- Layouts:
 
--- You can specify and transform your layouts by modifying these values.
--- If you change layout bindings be sure to use 'mod-shift-space' after
--- restarting (with 'mod-q') to reset your layout state to the new
--- defaults, as xmonad preserves your old layout settings by default.
---
--- The available layouts.  Note that each layout is separated by |||,
--- which denotes layout choice.
---
+{-|
+    Layouts:
+
+    You can specify and transform your layouts by modifying these values.
+    If you change layout bindings be sure to use 'mod-shift-space' after
+    restarting (with 'mod-q') to reset your layout state to the new
+    defaults, as xmonad preserves your old layout settings by default.
+
+    The available layouts.  Note that each layout is separated by |||,
+    which denotes layout choice.
+-}
+
 myLayout = screenCornerLayoutHook
          $ avoidStruts
-         $ noBorders (   renamed [Replace "MyFull"] (minimize Full)
-                     ||| tabbed shrinkText (theme darkTheme)
-                     ||| tiled
-                     ||| Mirror tiled
-                     )
+         $ noBorders
+         $ onWorkspace "skype" (renamed [Replace "One Window Max"] (limitWindows 1 Full))
+         $ BW.boringAuto
+         (   renamed [Replace "Simplest"] (minimize Simplest)
+         ||| tiled
+         ||| Mirror tiled
+         )
   where
      -- default tiling algorithm partitions the screen into two panes
-     tiled   = Tall nmaster delta ratio
+     tiled = renamed [Replace "Two Windows"] (limitWindows 2 $ Tall nmaster delta ratio)
 
      -- The default number of windows in the master pane
      nmaster = 1
 
      -- Default proportion of screen occupied by master pane
-     ratio   = 1/2
+     ratio = 1/2
 
      -- Percent of screen to increment by when resizing panes
-     delta   = 3/100
+     delta = 3/100
 
 ------------------------------------------------------------------------
--- Window rules:
 
--- Execute arbitrary actions and WindowSet manipulations when managing
--- a new window. You can use this to, for example, always float a
--- particular program, or have a client always appear on a particular
--- workspace.
---
--- To find the property name associated with a program, use
--- > xprop | grep WM_CLASS
--- and click on the client you're interested in.
---
--- To match on the WM_NAME, you can use 'title' in the same way that
--- 'className' and 'resource' are used below.
---
--- Check also https://wiki.haskell.org/Xmonad/General_xmonad.hs_config_tips
+{-|
+    Window rules:
+
+    Execute arbitrary actions and WindowSet manipulations when managing
+    a new window. You can use this to, for example, always float a
+    particular program, or have a client always appear on a particular
+    workspace.
+
+    To find the property name associated with a program, use
+    > xprop | grep WM_CLASS
+    and click on the client you're interested in.
+
+    To match on the WM_NAME, you can use 'title' in the same way that
+    'className' and 'resource' are used below.
+
+    Check also https://wiki.haskell.org/Xmonad/General_xmonad.hs_config_tips
+-}
+
 myManageHook = composeAll (concat
     [
       [ className =? "Skype"                        --> doShift "skype" ]
-    , [ className =? "qutebrowser"                  --> viewShift "web" ]
-    , [ title     =? "Microsoft Teams Notification" --> doSideFloat NC ]
-    , [ className =? fc                             --> doFloat | fc <- myFloatClasses ]
-    , [ resource  =? fr                             --> doFloat | fr <- myFloatResources ]
+    , [ isDialog                                    --> doSideFloat C ]
+    , [ className =? fc                             --> doCenterFloat | fc <- myFloatClasses ]
     , [ resource  =? ir                             --> doIgnore | ir <- myIgnoreResources ]
     ])
     <+> namedScratchpadManageHook myScratchpads
-      where viewShift = doF . liftM2 (.) W.greedyView W.shift
-            myFloatClasses = ["Mplayer", "Gimp", "Skype", "Java"]
-            myFloatResources = ["Dialog"]
+      where skypePopupSize = "program specified minimum size: 207 by 207"
+            myFloatClasses = ["Mplayer", "Gimp", "Java", "Pavucontrol", "Gnome-calculator"]
             myIgnoreResources = ["desktop_window", "kdesktop"]
+            --viewShift = doF . liftM2 (.) W.greedyView W.shift
+
+shiftToAndNotify :: WorkspaceId -> ManageHook
+shiftToAndNotify ws = do
+                        cw <- currentWs
+                        unless (cw == ws) sendNotification
+                        doShift ws
+                  where title = "XMonad LayoutHook"
+                        body = "Moved window to <b>" ++ ws ++ "</b> workspace!"
+                        sendNotification = spawn $ "notify-send -u low " ++ safeArgs [title, body]
 
 ------------------------------------------------------------------------
--- Event handling
 
--- * EwmhDesktops users should change this to ewmhDesktopsEventHook
---
--- Defines a custom handler function for X Events. The function should
--- return (All True) if the default handler is to be run afterwards. To
--- combine event hooks use mappend or mconcat from Data.Monoid.
---
-myHandleEventHook e = do
-  minimizeEventHook e
-  screenCornerEventHook e
+{-|
+    Event handling
 
-------------------------------------------------------------------------
--- Status bars and logging
+    * EwmhDesktops users should change this to ewmhDesktopsEventHook
 
--- Perform an arbitrary action on each internal state change or X event.
--- See the 'XMonad.Hooks.DynamicLog' extension for examples.
---
-myLogHook = return ()
+    Defines a custom handler function for X Events. The function should
+    return (All True) if the default handler is to be run afterwards. To
+    combine event hooks use mappend or mconcat from Data.Monoid.
+-}
+
+myHandleEventHook = dynamicTitle myDynamicPropertyHook <+> (minimizeEventHook >> screenCornerEventHook)
+                    where myDynamicPropertyHook = composeAll [
+                                    (("WhatsApp Web" `isInfixOf`) <$> title)
+                               <||> (("Telegram Web" `isInfixOf`) <$> title) --> shiftToAndNotify "chat"
+                              ]
 
 ------------------------------------------------------------------------
--- Startup hook
 
--- Perform an arbitrary action each time xmonad starts or is restarted
--- with mod-q.  Used by, e.g., XMonad.Layout.PerWorkspace to initialize
--- per-workspace layout choices.
---
--- By default, do nothing.
+{-|
+    Status bars and logging
+
+    Perform an arbitrary action on each internal state change or X event.
+    See the 'XMonad.Hooks.DynamicLog' extension for examples.
+-}
+
+myLogHook = do
+              xmobarTop <- getNamedPipe "xmobar-top"
+              xmobarBottom <- getNamedPipe "xmobar-bottom"
+              dynamicLogWithPP $ xmobarPP
+                  { ppOutput = \x -> maybe (return . const ()) hPutStrLn xmobarTop x
+                                  >> maybe (return . const ()) hPutStrLn xmobarBottom x
+                  , ppCurrent = xmobarColor "#A6D67C" "" . wrap "[" "]"         -- current workspace
+                  , ppVisible = xmobarColor "#FCDF77" "" . clickable            -- visible but not current workspace
+                  , ppHidden = xmobarColor "#C792EA" "" . clickable             -- hidden workspaces with windows
+                  , ppHiddenNoWindows = xmobarColor "#82AAFF" "" . clickable    -- hidden workspaces with no windows
+                  , ppTitle = xmobarColor "#B3AFC2" "" . shorten 70             -- title of active window
+                  , ppSep = "  "                                                -- separators
+                  , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"          -- urgent workspace
+                  }
+
+------------------------------------------------------------------------
+
+{-|
+    Startup hook
+
+    Perform an arbitrary action each time xmonad starts or is restarted
+    with mod-q.  Used by, e.g., XMonad.Layout.PerWorkspace to initialize
+    per-workspace layout choices.
+
+    By default, do nothing.
+-}
+
 myStartupHook = do
+        xmobarTop <- spawnNamedPipe "xmobar -x 0 /home/freestingo/.config/xmobar/xmobarrc0" "xmobar-top"
+        xmobarBottom <- spawnNamedPipe "xmobar -x 1 /home/freestingo/.config/xmobar/xmobarrc1" "xmobar-bottom"
         spawnOnce "nitrogen --restore &"
         spawnOnce $ "picom --experimental-backends"
                  ++ " --blur-background --blur-method gaussian --blur-kern 11x11gaussian"
@@ -501,6 +577,7 @@ myStartupHook = do
         spawnOnce "~/scripts/startupcmds.sh &"
         spawnOnce "nm-applet &"
         spawnOnce "volumeicon &"
+        spawnOnce "pasystray &"
         spawnOnce "trayer --edge top --align right --widthtype request --padding 5 --SetDockType true --SetPartialStrut false --expand true --monitor 1 --transparent true --alpha 0 --tint 0x1b1c22 --height 25"
         setWMName "LG3D"
         setDefaultCursor xC_left_ptr -- never show `X` shaped pointer, but use normal arrow pointer instead
@@ -508,10 +585,16 @@ myStartupHook = do
         --                  , (SCLowerLeft, prevWS)
         --                  ]
 
+-- dynXmobar :: ScreenId -> IO Handle
+-- dynXmobar (S i) = spawnPipe $ "xmobar -x " ++ monitor ++ " /home/freestingo/.config/xmobar/xmobarrc" ++ monitor
+--     where monitor = show i
+
 ------------------------------------------------------------------------
 
--- DYNAMIC PROJECTS!
--- https://hackage.haskell.org/package/xmonad-contrib-0.16/docs/XMonad-Actions-DynamicProjects.html
+{-|
+    DYNAMIC PROJECTS!
+    https://hackage.haskell.org/package/xmonad-contrib-0.16/docs/XMonad-Actions-DynamicProjects.html
+-}
 
 projects :: [Project]
 projects =
@@ -547,40 +630,41 @@ startOncode :: X ()
 startOncode = do
                 spawn "chromium --new-window teams.microsoft.com"
                 spawn "chromium --new-window outlook.office.com/mail/inbox"
+                spawn "chromium --new-window \"https://gitlab.com/oncodeit/oeds/fmc\""
 
 startNpo :: X ()
 startNpo = do
              spawn "teams"
              spawn $ myBrowser ++ " -new-window outlook.office.com/mail/inbox"
 
+myProjectStartHooks :: [(String, X ())]
+myProjectStartHooks = [("oncode", startOncode), ("npo", startNpo), ("chat", startChat), ("skype", startSkype)]
+    where startChat = spawn "firefox -new-window https://web.whatsapp.com/"
+          startSkype = spawn "skypeforlinux"
+          startOncode = do
+                          spawn "chromium --new-window teams.microsoft.com"
+                          spawn "chromium --new-window outlook.office.com/mail/inbox"
+                          spawn "chromium --new-window \"https://gitlab.com/oncodeit/oeds/fmc\""
+          startNpo = do
+                       spawn "teams"
+                       spawn $ myBrowser ++ " -new-window outlook.office.com/mail/inbox"
+
 ------------------------------------------------------------------------
 
--- MAIN
+main = xmonad
+     $ dynamicProjects projects
+     $ docks
+     $ withUrgencyHook NoUrgencyHook
+       defaults
 
-main = do
-  xmproc0 <- spawnPipe "xmobar -x 0 /home/freestingo/.config/xmobar/xmobarrc0"
-  xmproc1 <- spawnPipe "xmobar -x 1 /home/freestingo/.config/xmobar/xmobarrc1"
-  xmonad $ dynamicProjects projects $ docks defaults {
-      logHook = dynamicLogWithPP $ xmobarPP
-          { ppOutput = \x -> hPutStrLn xmproc0 x >> hPutStrLn xmproc1 x
-          , ppCurrent = xmobarColor "#A6D67C" "" . wrap "[" "]"         -- current workspace
-          , ppVisible = xmobarColor "#FCDF77" "" . clickable            -- visible but not current workspace
-          , ppHidden = xmobarColor "#C792EA" "" . clickable             -- hidden workspaces with windows
-          , ppHiddenNoWindows = xmobarColor "#82AAFF" "" . clickable    -- hidden workspaces with no windows
-          , ppTitle = xmobarColor "#B3AFC2" "" . shorten 70             -- title of active window
-          , ppSep = "  "                                                -- separators
-          , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"          -- urgent workspace
-          }
-    }
+{-|
+    A structure containing your configuration settings, overriding
+    fields in the default config. Any you don't override, will
+    use the defaults defined in xmonad/XMonad/Config.hs
 
--- A structure containing your configuration settings, overriding
--- fields in the default config. Any you don't override, will
--- use the defaults defined in xmonad/XMonad/Config.hs
---
--- No need to modify this.
---
+    No need to modify this.
+-}
 defaults = def {
-      -- simple stuff
         terminal           = myTerminal,
         focusFollowsMouse  = myFocusFollowsMouse,
         clickJustFocuses   = myClickJustFocuses,
@@ -590,11 +674,9 @@ defaults = def {
         normalBorderColor  = myNormalBorderColor,
         focusedBorderColor = myFocusedBorderColor,
 
-      -- key bindings
         keys               = myKeys,
         mouseBindings      = myMouseBindings,
 
-      -- hooks, layouts
         layoutHook         = myLayout,
         manageHook         = myManageHook,
         handleEventHook    = myHandleEventHook,
@@ -602,7 +684,6 @@ defaults = def {
         startupHook        = myStartupHook
     }
 
--- | Finally, a copy of the default bindings in simple textual tabular format.
 help :: String
 help = unlines ["The default modifier key is 'alt'. Default keybindings:",
     "",
@@ -652,3 +733,4 @@ help = unlines ["The default modifier key is 'alt'. Default keybindings:",
     "mod-button1  Set the window to floating mode and move by dragging",
     "mod-button2  Raise the window to the top of the stack",
     "mod-button3  Set the window to floating mode and resize by dragging"]
+
