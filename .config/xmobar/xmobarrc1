@@ -7,7 +7,7 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
        , bgColor = "#1B1C22"
        , fgColor = "#D1D5DA"
        , alpha = 255
-       , position = Bottom
+       , position = Top
        , textOffset = 18
        , textOffsets = [21]
        , iconOffset = -1
@@ -31,10 +31,10 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
                                   ] 100
                  -- , Run Cpu ["-t", "<fn=1>\xf463</fn> <total>%"] 10
                  -- , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 10
-                    , Run Date "<fc=#BAEFF6><fn=1>\xf133</fn> %a %d-%m-%Y</fc>  <fc=#C4E6F5><fn=1>\xf64f</fn> %H:%M</fc>" "date" 10
+                    , Run Date "<fc=#B3AFC2><fn=1>\xf133</fn></fc> %a %d-%m-%Y  <fc=#B3AFC2><fn=1>\xf64f</fn></fc> %H:%M" "date" 10
                     , Run UnsafeStdinReader
                     ]
        , sepChar = "%"
        , alignSep = "}{"
-       , template = " %UnsafeStdinReader% }{ <action=`gsimplecal` button=1>%date%</action>  <fc=#F6B6F0>%battery%</fc> "
+       , template = " %UnsafeStdinReader% }{ <action=`gsimplecal` button=1>%date%</action>  %battery% "
        }

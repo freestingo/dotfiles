@@ -3,10 +3,12 @@
 
 import XMonad
 import Data.Char
+import Data.Foldable
 import Data.List
 import Data.Maybe
 import Data.Monoid
 import Control.Applicative (liftA2)
+-- import Control.Arrow
 import Control.Monad
 import Graphics.X11.ExtraTypes.XF86
 import System.Exit
@@ -21,11 +23,13 @@ import qualified XMonad.Actions.FlexibleResize as Flex
 import XMonad.Actions.GridSelect
 import XMonad.Actions.GroupNavigation
 import XMonad.Actions.Minimize
+import XMonad.Actions.NoBorders
 import XMonad.Actions.PerWorkspaceKeys
 import XMonad.Actions.RotSlaves
 import XMonad.Actions.Search as S
 import XMonad.Actions.SpawnOn
 import XMonad.Actions.Submap as SM
+import XMonad.Actions.TagWindows
 import XMonad.Actions.Warp
 import XMonad.Actions.WindowBringer
 import XMonad.Actions.WindowGo
@@ -41,12 +45,14 @@ import XMonad.Hooks.UrgencyHook
 import qualified XMonad.Layout.BoringWindows as BW
 import XMonad.Layout.ImageButtonDecoration
 import XMonad.Layout.IndependentScreens
-import XMonad.Layout.LimitWindows
+import XMonad.Layout.LayoutModifier
+import XMonad.Layout.LimitWindows -- with custom `increaseLimit` and layout description modifier
 import XMonad.Layout.Minimize
 import XMonad.Layout.NoBorders
 import XMonad.Layout.PerWorkspace
 import XMonad.Layout.Renamed
 import XMonad.Layout.Simplest
+import XMonad.Layout.Spacing
 import XMonad.Layout.Tabbed
 import XMonad.Prompt
 import XMonad.Prompt.ConfirmPrompt
@@ -85,7 +91,7 @@ myClickJustFocuses :: Bool
 myClickJustFocuses = False
 
 -- could be overridden by XMonad.Layout.NoBorders
-myBorderWidth = 3
+myBorderWidth = 4
 
 -- mod1Mask = left alt
 -- mod4Mask = windows key
@@ -103,7 +109,7 @@ myNormalBorderColor :: String
 myNormalBorderColor  = "#1E2428"
 
 myFocusedBorderColor :: String
-myFocusedBorderColor = "#A6D67C"
+myFocusedBorderColor = "#8494B8"
 
 myGridSelectConfig :: HasColorizer a => GSConfig a
 myGridSelectConfig = def { gs_font = "xft:Hasklug Nerd Font Mono:pixelsize=16:antialias=true:hinting=true"
@@ -264,6 +270,15 @@ confirmLogout = do
     result <- D.menuArgs "dmenu" ["-c", "-i", "-h", "30", "-fn", myDmenuFont, "-p", "Confirm logout?"] ["No", "Yes"]
     when (result == "Yes") $ io exitSuccess
 
+{-|
+   Execute an X action to all windows in the current workspace.
+   Inspired by:
+      https://hackage.haskell.org/package/xmonad-contrib-0.16/docs/XMonad-Actions-WithAll.html
+      https://stackoverflow.com/questions/47051557/how-can-i-get-the-count-of-windows-in-the-current-workspace
+-}
+withAllWindows :: (Window -> X ()) -> X ()
+withAllWindows action = traverse_ action . W.index . windowset =<< get
+
 ------------------------------------------------------------------------
 
 myKeys :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
@@ -323,12 +338,22 @@ myKeysEZConfig conf = mkKeymap conf [
     , ("M--", sendMessage Shrink)
     -- Expand the master area
     , ("M-+", sendMessage Expand)
+    -- Increase window padding
+    , ("M-S-+", modifyPadding 5)
+    -- Decrease window padding
+    , ("M-S--", modifyPadding (-5))
+    -- Increase number of visible windows in tiled layouts
+    , ("M-C-+", increaseLimit)
+    -- Decrease number of visible windows in tiled layouts
+    , ("M-C--", decreaseLimit)
     -- Minimize window
     , ("M-m", withFocused minimizeWindow)
     -- Maximize last minimized window
     , ("M-S-m", withLastMinimized maximizeWindowAndFocus)
-    -- Toggle actual full-screen mode (windows will overlap xmobar)
-    , ("M-f", sendMessage ToggleStruts)
+    -- Toggle actual full-screen mode (toggle struts + toggle window padding and round corners)
+    , ("M-f", toggleFullScreen)
+    -- Only toggle struts
+    , ("M-S-f", sendMessage ToggleStruts)
     -- Go to next window with the same class name as the focused one
     , ("M-n", nextMatchWithThis Forward className)
     -- Go to previous window with the same class name as the focused one
@@ -354,6 +379,8 @@ myKeysEZConfig conf = mkKeymap conf [
     , ("M-b", gotoMenuArgs ["-c", "-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", "Go to window:"])
     -- Bring chosen window to current workspace
     , ("M-S-b", bringMenuArgs ["-c", "-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", "Fetch window:"])
+    -- Toggle borders of all windows in current workspace
+    , ("M-C-b", withAllWindows toggleBorder)
     -- Move mouse cursor to a corner of the focused window
     , ("M-S-p", banishScreen LowerRight)
     -- Open terminal scratchpad
@@ -406,6 +433,21 @@ myKeysEZConfig conf = mkKeymap conf [
     , ("M-e n", mapM_ (uncurry P.pasteChar) $ fromJust $ M.lookup "npo" myEmails)
   ]
         where scrotCmd = "'notify-send -u low \"scrot\" \"Saved screenshot <b>\\\"screen_%y-%m-%d_$wx$h.png\\\"</b> to <b>~/Pictures</b>!\" & mv $f ~/Pictures/screen_%y-%m-%d_$wx$h.png'"
+              modifyWindowPadding x (Border t b l r) = Border (t + x) b       (l + x) r
+              modifyScreenPadding x (Border t b l r) = Border t       (b + x) l       (r + x)
+              modifyPadding amount = do
+                  sendMessage $ ModifyWindowBorder (modifyWindowPadding amount)
+                  sendMessage $ ModifyScreenBorder (modifyScreenPadding amount)
+              toggleFullScreen = do
+                  withAllWindows $ toggleBorder <> toggleTag
+                  toggleScreenSpacingEnabled
+                  toggleWindowSpacingEnabled
+                  sendMessage ToggleStruts
+                  where toggleTag win = do
+                          hasNoRoundCorners <- hasTag "no-round-corners" win
+                          if hasNoRoundCorners
+                            then delTag "no-round-corners" win
+                            else addTag "no-round-corners" win
 
 ------------------------------------------------------------------------
 
@@ -449,8 +491,10 @@ myMouseBindings XConfig { XMonad.modMask = modm } = M.fromList
 -}
 
 myLayout = screenCornerLayoutHook
+         -- First padding value is screen-related, second one is windows-related
+         -- https://www.reddit.com/r/xmonad/comments/n05z0o/questions_about_gaps_and_multimonitor/
+         $ renamed [CutWordsLeft 1] $ spacingRaw False (Border 0 40 0 40) True (Border 40 0 40 0) True
          $ avoidStruts
-         $ noBorders
          $ onWorkspace "skype" (renamed [Replace "One Window Max"] (limitWindows 1 Full))
          $ BW.boringAuto
          (   renamed [Replace "Simplest"] (minimize Simplest)
@@ -459,14 +503,11 @@ myLayout = screenCornerLayoutHook
          )
   where
      -- default tiling algorithm partitions the screen into two panes
-     tiled = renamed [Replace "Two Windows"] (limitWindows 2 $ Tall nmaster delta ratio)
-
+     tiled = limitWindows 2 $ Tall nmaster delta ratio
      -- The default number of windows in the master pane
      nmaster = 1
-
      -- Default proportion of screen occupied by master pane
      ratio = 1/2
-
      -- Percent of screen to increment by when resizing panes
      delta = 3/100
 
@@ -542,13 +583,13 @@ myHandleEventHook = dynamicTitle myDynamicPropertyHook
 
 myLogHook = multiPP focusPP unfocusPP
     where focusPP = xmobarPP
-                  { ppCurrent = xmobarColor "#A6D67C" "" . wrap "[" "]"         -- current workspace
-                  , ppVisible = xmobarColor "#FCDF77" "" . clickable            -- visible but not current workspace
-                  , ppHidden = xmobarColor "#C792EA" "" . clickable             -- hidden workspaces with windows
-                  , ppHiddenNoWindows = xmobarColor "#82AAFF" "" . clickable    -- hidden workspaces with no windows
+                  { ppCurrent = xmobarColor "#F79EED" "" . wrap "[" "]"         -- current workspace
+                  , ppVisible = xmobarColor "#F2B3C9" "" . clickable            -- visible but not current workspace
+                  , ppHidden = xmobarColor "#B392F0" "" . clickable             -- hidden workspaces with windows
+                  , ppHiddenNoWindows = xmobarColor "#9ECBFF" "" . clickable    -- hidden workspaces with no windows
                   , ppTitle = xmobarColor "#B3AFC2" "" . shorten 70             -- title of active window
                   , ppSep = "  "                                                -- separators
-                  , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"          -- urgent workspace
+                  , ppUrgent = xmobarColor "#F97583" "" . wrap "!" "!"          -- urgent workspace
                   }
           unfocusPP = focusPP
 
@@ -563,12 +604,13 @@ myLogHook = multiPP focusPP unfocusPP
 
     By default, do nothing.
 -}
-
+-- TODO check if the trailing `&`s are really needed
 myStartupHook = do
         spawnOnce "nitrogen --restore &"
-        spawnOnce $ "picom --experimental-backends"
-                 ++ " --blur-background --blur-method gaussian --blur-kern 11x11gaussian"
-                 ++ " --xrender-sync-fence"
+        spawnOnce "/usr/local/bin/picom --experimental-backends &"
+        -- spawnOnce $ "picom --experimental-backends"
+        --          ++ " --blur-background --blur-method gaussian --blur-kern 11x11gaussian"
+        --          ++ " --xrender-sync-fence"
         -- manually setting latitude and longitude values because auto-location detection won't work for some reason
         spawnOnce "redshift-gtk -l 42.907546:13.882904 &"
         spawnOnce "~/scripts/startupcmds.sh &"

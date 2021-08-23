@@ -32,10 +32,10 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
                                   , "-A", "5"
                                   , "-a", "notify-send -u critical 'Battery about to run out! Put me on AC ASAP!!!!'"
                       ] 10
-                    , Run Date "<fc=#BAEFF6><fn=1>\xf133</fn> %a %d-%m-%Y</fc>  <fc=#C4E6F5><fn=1>\xf64f</fn> %H:%M</fc>" "date" 10
+                    , Run Date "<fc=#B3AFC2><fn=1>\xf133</fn></fc> %a %d-%m-%Y  <fc=#B3AFC2><fn=1>\xf64f</fn></fc> %H:%M" "date" 10
                     , Run UnsafeStdinReader
                     ]
        , sepChar = "%"
        , alignSep = "}{"
-       , template = " %UnsafeStdinReader% }{ <action=`gsimplecal` button=1>%date%</action>  <fc=#F6B6F0>%battery%</fc>                      "
+       , template = " %UnsafeStdinReader% }{ <action=`gsimplecal` button=1>%date%</action>  %battery%                      "
        }
