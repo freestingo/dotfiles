@@ -310,7 +310,7 @@ myKeysOldSyntax conf@XConfig { XMonad.modMask = modm } = M.fromList $
 
 myKeysEZConfig conf = mkKeymap conf [
     -- Launch a terminal
-      ("M-S-<Return>", spawn $ XMonad.terminal conf)
+      ("M-C-<Return>", spawn $ XMonad.terminal conf)
     -- Launch dmenu
     , ("M-p", spawn $ unwords [ "dmenu_run"
                               , "-c -l 10 -h 30"
@@ -320,7 +320,9 @@ myKeysEZConfig conf = mkKeymap conf [
                               ]
       )
     -- Close focused window
-    , ("M-S-c", kill)
+    , ("M-c", kill)
+    -- Close all windows in current workspace
+    , ("M-S-c", withAllWindows killWindow)
     -- Move focus to the next non-boring window
     , ("M-<Tab>", BW.focusDown)
     -- Move focus to the previous non-boring window
@@ -406,8 +408,6 @@ myKeysEZConfig conf = mkKeymap conf [
     , ("M-x", spawn myBrowser)
     -- Open Firefox in private mode
     , ("M-S-x", spawn $ myBrowser ++ " -private")
-    -- Open Chromium
-    , ("M-c", spawn "chromium")
     -- Search on Google
     , ("M-C-g", searchPrompt "Google" "https://www.google.com/search?channel=fs&client=ubuntu&q=")
     -- Browse my GitHub repos
@@ -544,26 +544,29 @@ myLayout = screenCornerLayoutHook
 
 myManageHook = composeAll (concat
     [
-      [ className =? "Skype"    --> doShift "skype" ]
-    , [ isDialog                --> doSideFloat C ]
+      [ isDialog                --> doSideFloat C ]
     , [ className =? fc         --> doCenterFloat | fc <- myFloatClasses ]
     , [ className =? rfc        --> doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7) | rfc <- myResizeFloatClasses ]
+    , [ className =? rb         --> hasBorder False | rb <- myRemoveBorderClasses ]
     , [ resource  =? ir         --> doIgnore | ir <- myIgnoreResources ]
     ])
     <+> namedScratchpadManageHook myScratchpads
       where myFloatClasses = ["Mplayer", "Gimp", "Java", "Pavucontrol", "Gnome-calculator", "Org.gnome.Nautilus"]
             myResizeFloatClasses = ["VirtualBox Manager"]
+            myRemoveBorderClasses = ["VirtualBox Machine", "org.gnome.Nautilus"]
             myIgnoreResources = ["desktop_window", "kdesktop"]
             --viewShift = doF . liftM2 (.) W.greedyView W.shift
+
+sendNotification :: MonadIO m => String -> String -> m ()
+sendNotification title body = spawn $ "notify-send -u low " ++ safeArgs [title, body]
 
 shiftToAndNotify :: WorkspaceId -> ManageHook
 shiftToAndNotify ws = do
                         cw <- currentWs
-                        unless (cw == ws) sendNotification
+                        unless (cw == ws) $ sendNotification title body
                         doShift ws
                   where title = "XMonad LayoutHook"
                         body = "Moved window to <b>" ++ ws ++ "</b> workspace!"
-                        sendNotification = spawn $ "notify-send -u low " ++ safeArgs [title, body]
 
 ------------------------------------------------------------------------
 
@@ -578,6 +581,7 @@ shiftToAndNotify ws = do
 -}
 
 myHandleEventHook = dynamicTitle myDynamicPropertyHook
+                <+> borderEventHook
                 <+> (minimizeEventHook >> screenCornerEventHook)
               where myDynamicPropertyHook = composeAll [
                                     (("WhatsApp Web" `isInfixOf`) <$> title)
