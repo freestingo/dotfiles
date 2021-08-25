@@ -109,7 +109,7 @@ myWorkspaces = [ "code"
                , "oncode"
                , "npo"
                , "chat"
-               , "skype"
+               , "vm"
                , "fun"
                ]
 
@@ -506,8 +506,8 @@ myLayout = screenCornerLayoutHook
          -- https://www.reddit.com/r/xmonad/comments/n05z0o/questions_about_gaps_and_multimonitor/
          $ renamed [CutWordsLeft 1] $ spacingRaw False (Border 0 40 0 40) True (Border 40 0 40 0) True
          $ avoidStruts
-         $ onWorkspace "skype" (renamed [Replace "One Window Max"] (limitWindows 1 Full))
          $ BW.boringAuto
+         $ (onWorkspace "vm" . BW.boringAuto . renamed [Replace "VM Layout"] . noBorders $ minimize Simplest)
          (   renamed [Replace "Simplest"] (minimize Simplest)
          ||| tiled
          ||| Mirror tiled
@@ -668,7 +668,7 @@ projects =
               , projectDirectory = "~/"
               , projectStartHook = Nothing
               }
-    , Project { projectName = "skype"
+    , Project { projectName = "vm"
               , projectDirectory = "~/"
               , projectStartHook = Nothing
               }
@@ -679,6 +679,9 @@ startChat = spawn "firefox -new-window https://web.whatsapp.com/"
 
 startSkype :: X ()
 startSkype = spawn "skypeforlinux"
+
+startVirtualBox :: X ()
+startVirtualBox = spawn "virtualbox"
 
 startOncode :: X ()
 startOncode = do
@@ -692,16 +695,7 @@ startNpo = do
              spawn $ myBrowser ++ " -new-window outlook.office.com/mail/inbox"
 
 myProjectStartHooks :: [(String, X ())]
-myProjectStartHooks = [("oncode", startOncode), ("npo", startNpo), ("chat", startChat), ("skype", startSkype)]
-    where startChat = spawn "firefox -new-window https://web.whatsapp.com/"
-          startSkype = spawn "skypeforlinux"
-          startOncode = do
-                          spawn "chromium --new-window teams.microsoft.com"
-                          spawn "chromium --new-window outlook.office.com/mail/inbox"
-                          spawn "chromium --new-window \"https://gitlab.com/oncodeit/oeds/fmc\""
-          startNpo = do
-                       spawn "teams"
-                       spawn $ myBrowser ++ " -new-window outlook.office.com/mail/inbox"
+myProjectStartHooks = [("oncode", startOncode), ("npo", startNpo), ("chat", startChat), ("skype", startSkype), ("vm", startVirtualBox)]
 
 ------------------------------------------------------------------------
 
