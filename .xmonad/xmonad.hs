@@ -8,7 +8,6 @@ import Data.List
 import Data.Maybe
 import Data.Monoid
 import Control.Applicative (liftA2)
--- import Control.Arrow
 import Control.Monad
 import Graphics.X11.ExtraTypes.XF86
 import System.Exit
@@ -51,6 +50,7 @@ import XMonad.Layout.Minimize
 import XMonad.Layout.NoBorders
 import XMonad.Layout.PerWorkspace
 import XMonad.Layout.Renamed
+import XMonad.Layout.ResizableTile
 import XMonad.Layout.Simplest
 import XMonad.Layout.Spacing
 import XMonad.Layout.Tabbed
@@ -351,10 +351,14 @@ myKeysEZConfig conf = mkKeymap conf [
     , ("M--", sendMessage Shrink)
     -- Expand the master area
     , ("M-+", sendMessage Expand)
+    -- Shrink the slave area
+    , ("M-S--", sendMessage MirrorShrink)
+    -- Expand the slave area
+    , ("M-S-+", sendMessage MirrorExpand)
     -- Increase window padding
-    , ("M-S-+", modifyPadding 5)
+    , ("M-S-C-+", modifyPadding 5)
     -- Decrease window padding
-    , ("M-S--", modifyPadding (-5))
+    , ("M-S-C--", modifyPadding (-5))
     -- Increase number of visible windows in tiled layouts
     , ("M-C-+", increaseLimit)
     -- Decrease number of visible windows in tiled layouts
@@ -504,7 +508,7 @@ myMouseBindings XConfig { XMonad.modMask = modm } = M.fromList
 myLayout = screenCornerLayoutHook
          -- First padding value is screen-related, second one is windows-related
          -- https://www.reddit.com/r/xmonad/comments/n05z0o/questions_about_gaps_and_multimonitor/
-         $ renamed [CutWordsLeft 1] $ spacingRaw False (Border 0 40 0 40) True (Border 40 0 40 0) True
+         $ renamed [CutWordsLeft 1] $ spacingRaw False (Border 0 50 0 50) True (Border 50 0 50 0) True
          $ avoidStruts
          $ BW.boringAuto
          $ (onWorkspace "vm" . BW.boringAuto . renamed [Replace "VM Layout"] . noBorders $ minimize Simplest)
@@ -514,13 +518,17 @@ myLayout = screenCornerLayoutHook
          )
   where
      -- default tiling algorithm partitions the screen into two panes
-     tiled = limitWindows 2 $ Tall nmaster delta ratio
+     tiled = renamed [CutWordsLeft 1] . minimize . limitWindows 2 $ ResizableTall nmaster delta ratio slaves
      -- The default number of windows in the master pane
      nmaster = 1
      -- Default proportion of screen occupied by master pane
      ratio = 1/2
      -- Percent of screen to increment by when resizing panes
      delta = 3/100
+     -- fraction to multiply the window height that would be given when divided equally.
+     -- slave windows are assigned their modified heights in order, from top to bottom
+     -- unspecified values are replaced by 1
+     slaves = []
 
 ------------------------------------------------------------------------
 
@@ -582,7 +590,8 @@ shiftToAndNotify ws = do
 
 myHandleEventHook = dynamicTitle myDynamicPropertyHook
                 <+> borderEventHook
-                <+> (minimizeEventHook >> screenCornerEventHook)
+                <+> minimizeEventHook
+                <+> screenCornerEventHook
               where myDynamicPropertyHook = composeAll [
                                     (("WhatsApp Web" `isInfixOf`) <$> title)
                                <||> (("Telegram Web" `isInfixOf`) <$> title) --> shiftToAndNotify "chat"
