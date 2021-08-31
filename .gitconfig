@@ -20,6 +20,7 @@
 	cdiff = diff --cached
 	nb = switch -c
 	sq = "!f() { git rebase -i HEAD~$1; }; f"
+	unstage = restore --staged
 	alias = ! git config --get-regexp ^alias\\. | sed -e s/^alias\\.// -e s/\\ /\\ =\\ /
 [pull]
 	ff = only
