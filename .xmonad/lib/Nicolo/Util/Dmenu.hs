@@ -51,81 +51,6 @@ myYoutubePlaylists = M.fromList
     , ("ZOMG ZUFALL!!!", "PLhLV2yWt3oZogxBIX5f0OEf2SXTRNFlB7")
     ]
 
--- TODO it would be nice to dynamically create this helper map by somehow
---      parsing a file in which you save all XMonad keybinds...
-myXMonadCommands :: M.Map String String
-myXMonadCommands = M.fromList
-    [ ("Launch Alacritty", "M-C-Return")
-    , ("Launch Dmenu", "M-p")
-    , ("Close focused window", "M-c")
-    , ("Close all windows in current workspace", "M-S-c")
-    , ("Move focus to the next non-boring window", "M-Tab")
-    , ("Move focus to the previous non-boring window", "M-S-Tab")
-    , ("Swap the focused window and the master window", "M-Return")
-    , ("Push floating window back into tiling", "M-t")
-    , ("Increment the number of windows in the master area", "M-,")
-    , ("Deincrement the number of windows in the master area", "M-.")
-    , ("Swap current screen with next screen", "M-S-C-k")
-    , ("Swap current screen with previous screen", "M-S-C-j")
-    , ("Quit xmonad (logout)", "M-S-q")
-    , ("Restart xmonad", "M-q")
-    , ("Go to next workspace", "M-l")
-    , ("Go to previous workspace", "M-h")
-    , ("Rotate through the available layout algorithms", "M-Space")
-    , ("Reset the layouts on the current workspace to default", "M-C-Space")
-    , ("Shrink the master area", "M--")
-    , ("Expand the master area", "M-+")
-    , ("Shrink the slave area", "M-S--")
-    , ("Expand the slave area", "M-S-+")
-    , ("Increase window padding", "M-S-C-+")
-    , ("Decrease window padding", "M-S-C--")
-    , ("Increase number of visible windows in tiled layouts", "M-C-+")
-    , ("Decrease number of visible windows in tiled layouts", "M-C--")
-    , ("Minimize window", "M-m")
-    , ("Maximize last minimized window", "M-S-m")
-    , ("Toggle actual full-screen mode (toggle struts + toggle window padding and round corners)", "M-f")
-    , ("Only toggle struts", "M-S-f")
-    , ("Go to next window with the same class name as the focused one", "M-n")
-    , ("Go to previous window with the same class name as the focused one", "M-S-n")
-    , ("Rotate slave windows up; useful when combined with `limitWindows`", "M-r")
-    , ("Rotate slave windows down", "M-S-r")
-    , ("Rotate all windows up", "M-C-r")
-    , ("Prompt for a project name and then switch to it (automatically creating it if it doesn't exist yet)", "M-w")
-    , ("Prompts for a project name and then shifts the currently focused window to that project", "M-S-w")
-    , ("Run project startup-hook", "M-s")
-    , ("Remove the current workspace", "M-d")
-    , ("Prompt for a workspace and remove it", "M-S-d")
-    , ("Go to workspace of chosen window", "M-b")
-    , ("Bring chosen window to current workspace", "M-S-b")
-    , ("Toggle borders of all windows in current workspace", "M-C-b")
-    , ("Move the mouse cursor to the current screen's lower right corner", "M-S-p")
-    , ("Open terminal scratchpad", "M-S-s")
-    , ("Open todo scratchpad", "M-S-t")
-    , ("Open GridSelect", "M-g")
-    , ("View all open windows with GridSelect", "M-S-g")
-    , ("Open Firefox", "M-x")
-    , ("Open Firefox in private mode", "M-S-x")
-    , ("Search on Google", "M-C-g")
-    , ("Browse my GitHub repos", "M-C-S-g")
-    , ("Search on YouTube", "M-C-y")
-    , ("Browse saved YouTube playlists", "M-C-p")
-    , ("Search on Wikipedia", "M-C-w")
-    , ("Search Splice samples", "M-C-s")
-    , ("Search on Netflix", "M-C-n")
-    , ("Increase brightness level for laptop screen", "XF86MonBrightnessUp")
-    , ("Decrease brightness level for laptop screen", "XF86MonBrightnessDown")
-    , ("Increase volume level", "XF86AudioRaiseVolume")
-    , ("Decrease volume level", "XF86AudioLowerVolume")
-    , ("Take screenshot of all displays", "Print")
-    , ("Take screenshot of selected area", "M-Print")
-    , ("Take screenshot of currently focused window", "M-S-Print")
-    , ("Paste my personal email address", "M-e p")
-    , ("Paste my oncode email address", "M-e o")
-    , ("Paste my NPO email address", "M-e n")
-    , ("Kill all windows in current workspace", "M-S-c")
-    , ("Spawn XMonad command helper", "M-C-h")
-    ]
-
 xmonadContribs :: [String]
 xmonadContribs = [
       "XMonad.Actions.AfterDrag"
@@ -457,17 +382,6 @@ browseYTPlaylists = myDmenuPrompt (myCenterDMonad "Open YouTube playlist:" ytPla
           handlePlaylist name = case M.lookup name myYoutubePlaylists of
             (Just n) -> spawn $ dmenuSearch ++ safeArg ("https://www.youtube.com/playlist?list=" ++ n)
             Nothing  -> myDmenuPrompt (myDialogDMonad ("Playlist '" ++ name ++ "' not found!") ["Ok"]) (return . const ())
-
--- TODO this and `browseYTPlaylists could probably be refactored to one function`
-lookupXMonadCommands :: X ()
-lookupXMonadCommands = myDmenuPrompt (myCenterDMonad "Lookup XMonad command:" xmonadCmdsHistory $ M.keys myXMonadCommands) handleCommand
-    where xmonadCmdsHistory = "/home/freestingo/Documents/suckless/dmenu-5.0/histfile-xmonadcmds"
-          handleCommand name = case M.lookup name myXMonadCommands of
-            (Just n) -> sendNotification "XMonad Help Menu" $ "Press <b>" ++ n ++ "</b> to <b>" ++ liftA2 (++) (map toLower . take 1) (drop 1) name ++ "</b>!"
-            Nothing  -> sendNotification "XMonad Help Menu"
-                      $ "Looks like there's <b>no command</b> to <b>"
-                     ++ name
-                     ++ "</b>!<br><br>Either you forgot it to add it to the <i><b>myXMonadCommands</b></i> list, or it simply hasn't been implemented yet."
 
 searchXMonadContrib :: X ()
 searchXMonadContrib = myDmenuPrompt (myCenterDMonad "Search xmonad-contrib modules:" xmonadContribHistory xmonadContribs) doSearch

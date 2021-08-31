@@ -1,12 +1,15 @@
 module Nicolo.Hooks.ManageHook where
 
+import           Data.List
 import           XMonad
 import           XMonad.Actions.SpawnOn
+import           XMonad.Hooks.InsertPosition
 import           XMonad.Hooks.ManageHelpers
 import           XMonad.Layout.NoBorders
 import qualified XMonad.StackSet as W
 import           XMonad.Util.NamedScratchpad
 import           Nicolo.Util.CustomVariables
+import           Nicolo.Actions.Custom
 
 {-|
     Window rules:
@@ -35,9 +38,18 @@ myManageHook = composeAll (concat
     , [ manageSpawn ]
     ])
     <+> namedScratchpadManageHook myScratchpads
-      where myFloatClasses = ["Mplayer", "Gimp", "Java", "Pavucontrol", "Gnome-calculator", "Org.gnome.Nautilus"]
+      where myFloatClasses = ["Mplayer", "Gimp", "Java", "Gnome-calculator"]
             myResizeFloatClasses = ["nessuna"]
-            myRemoveBorderClasses = ["VirtualBox Machine", "org.gnome.Nautilus"]
+            myRemoveBorderClasses = ["VirtualBox Machine"]
             myIgnoreResources = ["desktop_window", "kdesktop"]
-            --viewShift = doF . liftM2 (.) W.greedyView W.shift
+            -- viewShift = doF . liftM2 (.) W.greedyView W.shift
+
+{-|
+   Get the current layout's description.
+
+   Inspired by:
+     https://www.reddit.com/r/xmonad/comments/9vjml0/how_can_i_make_new_windows_not_go_to_first_spot/
+-}
+layoutDescription :: Query String
+layoutDescription = liftX . gets $ (description . W.layout . W.workspace . W.current . windowset)
 

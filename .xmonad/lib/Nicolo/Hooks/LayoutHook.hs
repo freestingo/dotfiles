@@ -3,6 +3,7 @@ module Nicolo.Hooks.LayoutHook where
 import           XMonad
 import           XMonad.Hooks.ScreenCorners
 import qualified XMonad.Layout.BoringWindows as BW
+import XMonad.Layout.Drawer
 import           Nicolo.Layout.LimitWindows -- with custom `increaseLimit` and layout description modifier
 import           XMonad.Layout.Minimize
 import           XMonad.Layout.NoBorders
@@ -11,6 +12,7 @@ import           XMonad.Layout.Renamed
 import           XMonad.Layout.ResizableTile
 import           XMonad.Layout.Simplest
 import           XMonad.Layout.Spacing
+import           XMonad.Layout.TwoPane
 import           XMonad.Hooks.ManageDocks
 
 {-|
@@ -35,6 +37,7 @@ myLayout = screenCornerLayoutHook
          (   renamed [Replace "Simplest"] (minimize Simplest)
          ||| tiled
          ||| Mirror tiled
+         -- ||| drawer `onLeft` tiled
          )
   where
      -- default tiling algorithm partitions the screen into two panes
@@ -49,4 +52,6 @@ myLayout = screenCornerLayoutHook
      -- slave windows are assigned their modified heights in order, from top to bottom
      -- unspecified values are replaced by 1
      slaves = []
+     -- cool drawer layout
+     drawer = simpleDrawer (1/100) (1/4) (ClassName "Firefox")
 

@@ -1,7 +1,9 @@
 module Nicolo.Actions.Custom where
 
 import           Control.Monad
+import           Data.Char
 import           Data.Foldable
+import           System.Process
 import           XMonad
 import           XMonad.Actions.NoBorders
 import           XMonad.Actions.TagWindows
@@ -9,6 +11,7 @@ import           XMonad.Hooks.ManageDocks
 import           XMonad.Hooks.ManageHelpers
 import           XMonad.Layout.Spacing
 import qualified XMonad.StackSet as W
+import           XMonad.Util.Run
 
 import           Nicolo.Util.Functions
 
@@ -27,6 +30,14 @@ withAllWindows action = traverse_ action . W.index . windowset =<< get
 -}
 sendNotification :: MonadIO m => String -> String -> m ()
 sendNotification title body = spawn $ "notify-send -u low " ++ safeArgs [title, body]
+
+{-|
+   Send tagged notification with `dunstify`;
+   this way, newer notifications will replace older ones if they
+   share the same tag (useful for brighness/volume changes, etc.)
+-}
+sendTaggedNotification :: MonadIO m => String -> String -> String -> m ()
+sendTaggedNotification tag title body = spawn $ "dunstify -u low -h string:x-dunst-stack-tag:" ++ tag ++ " " ++ safeArgs [title, body]
 
 {-|
    Shift window to the given workspace id and send a notification
@@ -73,4 +84,19 @@ toggleFullScreen = do
             if hasNoRoundCorners
               then delTag "no-round-corners" win
               else addTag "no-round-corners" win
+
+data BrightnessAction = IncreaseBrightness | DecreaseBrightness
+
+instance Show BrightnessAction where
+   show IncreaseBrightness = " -a "
+   show DecreaseBrightness = " -s "
+
+type PercentAmount = Int
+
+modifyBrightness :: BrightnessAction -> PercentAmount -> X ()
+modifyBrightness action amount = do
+   spawn $ "lux" ++ show action ++ show amount ++ "%"
+   -- TODO find out why this actually shows the level before the `spawn` on the line before was executed
+   currentBrightness <- runProcessWithInput "lux" ["-G"] ""
+   sendTaggedNotification "brightnessLvl" "XMonad Action" $ "Set brightness to <b>" ++ filter isPrint currentBrightness ++ "</b>!"
 
