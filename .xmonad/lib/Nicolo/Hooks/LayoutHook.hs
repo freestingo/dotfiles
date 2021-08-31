@@ -29,7 +29,6 @@ import           Nicolo.Layout.LimitWindows -- with custom `increaseLimit` and l
     The available layouts.  Note that each layout is separated by |||,
     which denotes layout choice.
 -}
-
 myLayout = screenCornerLayoutHook
          $ avoidStruts
          $ gaps [(U, padding), (D, padding), (L, padding), (R, padding)]
@@ -38,7 +37,6 @@ myLayout = screenCornerLayoutHook
          (   renamed [Replace "Simplest"] (minimize Simplest)
          ||| (tiledModifiers $ mouseResizableTile { draggerType = dragger })
          ||| (mirror . tiledModifiers $ mouseResizableTileMirrored { draggerType = dragger })
-         -- ||| drawer `onLeft` tiled
          )
   where
      tiledModifiers = renamed [CutWordsLeft 1] . minimize . limitWindows 2
@@ -47,7 +45,7 @@ myLayout = screenCornerLayoutHook
      padding :: Num a => a
      padding = 50
      -- default dragger
-     dragger = FixedDragger padding padding
+     dragger = FixedDragger padding padding True
      -- default tiling algorithm partitions the screen into two panes
      tiled = tiledModifiers $ ResizableTall nmaster delta ratio slaves
      -- The default number of windows in the master pane
