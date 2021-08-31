@@ -3,8 +3,8 @@ module Nicolo.Hooks.LayoutHook where
 import           XMonad
 import           XMonad.Hooks.ScreenCorners
 import qualified XMonad.Layout.BoringWindows as BW
-import XMonad.Layout.Drawer
-import           Nicolo.Layout.LimitWindows -- with custom `increaseLimit` and layout description modifier
+import           XMonad.Layout.Drawer
+import           XMonad.Layout.Gaps
 import           XMonad.Layout.Minimize
 import           XMonad.Layout.NoBorders
 import           XMonad.Layout.PerWorkspace
@@ -14,6 +14,9 @@ import           XMonad.Layout.Simplest
 import           XMonad.Layout.Spacing
 import           XMonad.Layout.TwoPane
 import           XMonad.Hooks.ManageDocks
+
+import           Nicolo.Layout.MouseResizableTile
+import           Nicolo.Layout.LimitWindows -- with custom `increaseLimit` and layout description modifier
 
 {-|
     Layouts:
@@ -28,20 +31,25 @@ import           XMonad.Hooks.ManageDocks
 -}
 
 myLayout = screenCornerLayoutHook
-         -- First padding value is screen-related, second one is windows-related
-         -- https://www.reddit.com/r/xmonad/comments/n05z0o/questions_about_gaps_and_multimonitor/
-         $ renamed [CutWordsLeft 1] $ spacingRaw False (Border 0 50 0 50) True (Border 50 0 50 0) True
          $ avoidStruts
+         $ gaps [(U, padding), (D, padding), (L, padding), (R, padding)]
          $ BW.boringAuto
          $ (onWorkspace "vm" . BW.boringAuto . renamed [Replace "VM Layout"] . noBorders $ minimize Simplest)
          (   renamed [Replace "Simplest"] (minimize Simplest)
-         ||| tiled
-         ||| Mirror tiled
+         ||| (tiledModifiers $ mouseResizableTile { draggerType = dragger })
+         ||| (mirror . tiledModifiers $ mouseResizableTileMirrored { draggerType = dragger })
          -- ||| drawer `onLeft` tiled
          )
   where
+     tiledModifiers = renamed [CutWordsLeft 1] . minimize . limitWindows 2
+     mirror = renamed [PrependWords "Mirror"]
+     -- amount of padding pixels around windows
+     padding :: Num a => a
+     padding = 50
+     -- default dragger
+     dragger = FixedDragger padding padding
      -- default tiling algorithm partitions the screen into two panes
-     tiled = renamed [CutWordsLeft 1] . minimize . limitWindows 2 $ ResizableTall nmaster delta ratio slaves
+     tiled = tiledModifiers $ ResizableTall nmaster delta ratio slaves
      -- The default number of windows in the master pane
      nmaster = 1
      -- Default proportion of screen occupied by master pane

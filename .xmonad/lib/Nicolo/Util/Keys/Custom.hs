@@ -22,6 +22,7 @@ import           XMonad.Hooks.ManageDocks
 import qualified XMonad.Layout.BoringWindows as BW
 import           Nicolo.Layout.LimitWindows
 import           XMonad.Layout.ResizableTile
+import           Nicolo.Layout.MouseResizableTile
 import           XMonad.Layout.Spacing
 import           XMonad.Util.EZConfig
 import           XMonad.Util.NamedScratchpad
@@ -57,15 +58,15 @@ myKeysWithDescription conf = [
     , (("Reset the layouts on the current workspace to default", "M-C-<Space>"), setLayout $ XMonad.layoutHook conf)
     , (("Shrink the master area", "M--"), sendMessage Shrink)
     , (("Expand the master area", "M-+"), sendMessage Expand)
-    , (("Shrink the slave area", "M-S--"), sendMessage MirrorShrink)
-    , (("Expand the slave area", "M-S-+"), sendMessage MirrorExpand)
-    , (("Increase window padding", "M-S-C-+"), modifyPadding 5)
-    , (("Decrease window padding", "M-S-C--"), modifyPadding (-5))
+    , (("Shrink the slave area", "M-S--"), sendMessage ShrinkSlave)
+    , (("Expand the slave area", "M-S-+"), sendMessage ExpandSlave)
+    , (("Increase window padding", "M-S-C-+"), modifyPadding' 5)
+    , (("Decrease window padding", "M-S-C--"), modifyPadding' (-5))
     , (("Increase number of visible windows in tiled layouts", "M-C-+"), increaseLimit)
     , (("Decrease number of visible windows in tiled layouts", "M-C--"), decreaseLimit)
     , (("Minimize window", "M-m"), withFocused minimizeWindow)
     , (("Maximize last minimized window", "M-S-m"), withLastMinimized maximizeWindowAndFocus)
-    , (("Toggle actual full-screen mode (toggle struts + toggle window padding and round corners)", "M-f"), toggleFullScreen)
+    , (("Toggle actual full-screen mode (toggle struts + toggle window padding and round corners)", "M-f"), toggleFullScreen')
     , (("Only toggle struts", "M-S-f"), sendMessage ToggleStruts)
     , (("Go to next window with the same class name as the focused one", "M-n"), nextMatchWithThis Forward className)
     , (("Go to previous window with the same class name as the focused one", "M-S-n"), nextMatchWithThis Backward className)

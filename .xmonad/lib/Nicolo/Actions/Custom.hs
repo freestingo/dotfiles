@@ -9,11 +9,13 @@ import           XMonad.Actions.NoBorders
 import           XMonad.Actions.TagWindows
 import           XMonad.Hooks.ManageDocks
 import           XMonad.Hooks.ManageHelpers
+import           XMonad.Layout.Gaps
 import           XMonad.Layout.Spacing
 import qualified XMonad.StackSet as W
 import           XMonad.Util.Run
 
 import           Nicolo.Util.Functions
+import           Nicolo.Layout.MouseResizableTile
 
 {-|
    Execute an X action to all windows in the current workspace.
@@ -68,6 +70,14 @@ modifyPadding amount = do
     sendMessage $ ModifyScreenBorder (modifyScreenPadding amount)
 
 {-|
+   Like `modifyPadding`, but meant for mouse-resizable layouts.
+-}
+modifyPadding' :: Int -> X ()
+modifyPadding' amount = do
+   traverse_ (sendMessage . IncGap amount) [U, D, R, L]
+   sendMessage $ ModifyDraggerGap (fromIntegral amount)
+
+{-|
    Toggles actual full-screen mode.
    In full-screen mode, other than disabling spacings and borders,
    all open windows in the current workspace will be tagged in order to
@@ -78,6 +88,21 @@ toggleFullScreen = do
     withAllWindows $ toggleBorder <> toggleTag
     toggleScreenSpacingEnabled
     toggleWindowSpacingEnabled
+    sendMessage ToggleStruts
+    where toggleTag win = do
+            hasNoRoundCorners <- hasTag "no-round-corners" win
+            if hasNoRoundCorners
+              then delTag "no-round-corners" win
+              else addTag "no-round-corners" win
+
+{-|
+   Like `toggleFullScreen`, but with added support for mouse-resizable layouts.
+-}
+toggleFullScreen' :: X ()
+toggleFullScreen' = do
+    withAllWindows $ toggleBorder <> toggleTag
+    sendMessage ToggleDraggerGap
+    sendMessage ToggleGaps
     sendMessage ToggleStruts
     where toggleTag win = do
             hasNoRoundCorners <- hasTag "no-round-corners" win
