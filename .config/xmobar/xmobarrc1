@@ -27,7 +27,8 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
                                   , "-l", "#F97583"
                                   , "-p", "#67F07B"
                                   , "-A", "5"
-                                  , "-a", "notify-send -u critical 'Battery about to run out! Put me on AC ASAP!!!!'"
+                               -- , "-a", "notify-send -u critical 'Battery about to run out! Put me on AC ASAP!!!!'"
+                                  , "-a", "dunstify -u critical -h string:x-dunst-stack-tag:lowbattery \"Critical Battery Status\" \"Battery about to run out!!!!\""
                                   ] 100
                  -- , Run Cpu ["-t", "<fn=1>\xf463</fn> <total>%"] 10
                  -- , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 10

@@ -18,9 +18,12 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
        , iconRoot = "."
        , allDesktops = True
        , overrideRedirect = True
-       , commands = [ Run Cpu ["-t", "<fn=1>\xf463</fn> <total>%"] 10
-                    , Run Memory ["-t", "<fn=1>\xf0c7</fn> <usedratio>%"] 10
-                    , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 60
+       , sepChar = "%"
+       , alignSep = "}{"
+       , commands = [ Run Date "<fc=#B3AFC2><fn=1>\xf133</fn></fc> %a %d-%m-%Y  <fc=#B3AFC2><fn=1>\xf64f</fn></fc> %H:%M" "date" 10
+                 -- , Run Cpu ["-t", "<fn=1>\xf463</fn> <total>%"] 10
+                 -- , Run Memory ["-t", "<fn=1>\xf0c7</fn> <usedratio>%"] 10
+                 -- , Run Brightness [ "-t", "<fn=1>\xf5de</fn> <percent>%", "--", "-D", "intel_backlight" ] 60
                     , Run Battery [ "-t", "<acstatus> <left>%"
                                   , "--"
                                   , "-o", "<fn=2>\xf580</fn>"
@@ -30,12 +33,11 @@ Config { font = "xft:Hasklug Nerd Font Mono:weight=bold:pixelsize=16:antialias=t
                                   , "-l", "#F97583"
                                   , "-p", "#67F07B"
                                   , "-A", "5"
-                                  , "-a", "notify-send -u critical 'Battery about to run out! Put me on AC ASAP!!!!'"
+                               -- , "-a", "notify-send -u critical 'Battery about to run out! Put me on AC ASAP!!!!'"
+                                  , "-a", "dunstify -u critical -h string:x-dunst-stack-tag:lowbattery \"Critical Battery Status\" \"Battery about to run out!!!!\""
                       ] 10
-                    , Run Date "<fc=#B3AFC2><fn=1>\xf133</fn></fc> %a %d-%m-%Y  <fc=#B3AFC2><fn=1>\xf64f</fn></fc> %H:%M" "date" 10
+                    , Run Com "/home/freestingo/scripts/trayer-padding-icon.sh" [] "traypad" 50
                     , Run UnsafeStdinReader
                     ]
-       , sepChar = "%"
-       , alignSep = "}{"
-       , template = " %UnsafeStdinReader% }{ <action=`gsimplecal` button=1>%date%</action>  %battery%                      "
+       , template = " %UnsafeStdinReader% }{ <action=`gsimplecal` button=1>%date%</action>  %battery%  %traypad%"
        }
