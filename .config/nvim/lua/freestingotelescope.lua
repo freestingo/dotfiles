@@ -1,5 +1,9 @@
 require('telescope').setup {
   defaults = {
+    file_ignore_patterns = {
+        "%.o"
+      , "%.hi"
+    },
     prompt_prefix = "> ",
     mappings = {
       i = {
