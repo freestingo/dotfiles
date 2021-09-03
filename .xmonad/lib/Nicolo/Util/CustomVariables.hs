@@ -75,11 +75,3 @@ myScratchpads = [ NS "terminal" spawnTerminal findTerminal manageTerminal
                         findTodo = title =? "TODO"
                         manageTodo = doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7)
 
-myEmails :: M.Map String [(KeyMask, Char)]
-myEmails = M.fromList
-         . zip ["personal", "oncode", "npo"]
-         . (fmap . fmap) toKeyBind
-         $ ["n.traini1@yahoo.it", "nicolo.traini@oncode.it", "nicolo.traini@nposervices.com"]
-           where toKeyBind c | c == '@'  = (mod5Mask, 'ò')
-                             | otherwise = (noModMask, c)
-

@@ -102,9 +102,7 @@ myKeysWithDescription conf = [
     , (("Decrease volume level", "<XF86AudioLowerVolume>"), spawn "pactl set-sink-volume @DEFAULT_SINK@ -1.5%")
     , (("Take screenshot of all displays", "<Print>"), takeScreenshot $ Scrot AllDisplays defScrotName defScrotCmd)
     , (("Take screenshot of selected area", "M-<Print>"), takeScreenshot $ Scrot SelectedArea defScrotName defScrotCmd)
-    , (("Paste my personal email address", "M-e p"), mapM_ (uncurry P.pasteChar) $ fromJust $ M.lookup "personal" myEmails)
-    , (("Paste my oncode email address", "M-e o"), mapM_ (uncurry P.pasteChar) $ fromJust $ M.lookup "oncode" myEmails)
-    , (("Paste my NPO email address", "M-e n"), mapM_ (uncurry P.pasteChar) $ fromJust $ M.lookup "npo" myEmails)
+    , (("Open Quick-Paste menu", "M-C-S-p"), openQuickPasteMenu)
     , (("Spawn XMonad command helper", "M-C-h"), lookupXMonadCommands conf)
     ]
 

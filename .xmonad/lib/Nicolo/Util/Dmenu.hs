@@ -11,6 +11,7 @@ import           XMonad.Actions.SpawnOn
 import qualified XMonad.StackSet as W
 import qualified XMonad.Util.Dmenu as D
 import qualified XMonad.Util.Dzen as DZ
+import qualified XMonad.Util.Paste as P
 import           XMonad.Util.Run
 
 import           Nicolo.Actions.Custom
@@ -344,8 +345,36 @@ myDmenuFavorites = "pavucontrol,dbeaver-ce,gnome-terminal,chromium,qutebrowser,n
 dmenuSearch :: String
 dmenuSearch = "firefox -new-window "
 
+myQuickPastes :: M.Map String [(KeyMask, Char)]
+myQuickPastes = M.fromList . (fmap . fmap . fmap) toKeyBind $ elements
+           where elements = [ ("FMC admin email", "admin@fmc.it")
+                            , ("FMC admin password", "Princip@l01")
+                            , ("FMC 'test grading 2' docente email", "s.erba7@campus.unimib.it")
+                            , ("FMC 'test grading 2' docente password", "Princip@l01")
+                            , ("FMC 'test grading 2' grader email", "n.traini1@yahoo.it")
+                            , ("FMC 'test grading 2' grader password", "Princip@l01")
+                            , ("FMC svn user", "s.erba")
+                            , ("FMC svn password", "S!m0n£_@")
+                            , ("FMC/O&DS VPN user", "OEDS.INTRA\r.dalo")
+                            , ("FMC/O&DS VPN password", "Rugg!£r@!")
+                            , ("Yahoo email address", "n.traini1@yahoo.it")
+                            , ("NPO email address", "nicolo.traini@nposervices.com")
+                            , ("Oncode email address", "nicolo.traini@oncode.it")
+                            , ("Trenitalia username", "Nicolotraini")
+                            ]
+                 toKeyBind c
+                   | c == '@'  = (mod5Mask, 'ò')
+                   | c == '!'  = (shiftMask, '1')
+                   | c == '£'  = (shiftMask, '3')
+                   | c == '_'  = (shiftMask, '-')
+                   | isUpper c = (shiftMask, c)
+                   | otherwise = (noModMask, c)
+
 myCenterDMonad :: MonadIO m => String -> String -> [String] -> m String
 myCenterDMonad promptMsg historyFile = D.menuArgs "dmenu" ["-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", promptMsg, "-H", historyFile, "-x", "540", "-y", "290", "-z", "900"]
+
+myCenterDMonad' :: MonadIO m => String -> [String] -> m String
+myCenterDMonad' promptMsg = D.menuArgs "dmenu" ["-i", "-l", "20", "-h", "30", "-fn", myDmenuFont, "-p", promptMsg, "-x", "540", "-y", "290", "-z", "900"]
 
 myInlineDMonad :: MonadIO m => String -> String -> [String] -> m String
 myInlineDMonad promptMsg historyFile = D.menuArgs "dmenu" ["-i", "-h", "30", "-fn", myDmenuFont, "-p", promptMsg, "-H", historyFile, "-x", "500", "-y", "440", "-z", "900"]
@@ -382,6 +411,12 @@ browseYTPlaylists = myDmenuPrompt (myCenterDMonad "Open YouTube playlist:" ytPla
           handlePlaylist name = case M.lookup name myYoutubePlaylists of
             (Just n) -> spawn $ dmenuSearch ++ safeArg ("https://www.youtube.com/playlist?list=" ++ n)
             Nothing  -> myDmenuPrompt (myDialogDMonad ("Playlist '" ++ name ++ "' not found!") ["Ok"]) (return . const ())
+
+openQuickPasteMenu :: X ()
+openQuickPasteMenu = myDmenuPrompt (myCenterDMonad' "Paste selection:" $ M.keys myQuickPastes) copySelection
+    where copySelection sel = case M.lookup sel myQuickPastes of
+            (Just s) -> mapM_ (uncurry P.pasteChar) s
+            Nothing  -> myDmenuPrompt (myDialogDMonad ("Element '" ++ sel ++ "' not found!") ["Ok"]) (return . const ())
 
 searchXMonadContrib :: X ()
 searchXMonadContrib = myDmenuPrompt (myCenterDMonad "Search xmonad-contrib modules:" xmonadContribHistory xmonadContribs) doSearch
