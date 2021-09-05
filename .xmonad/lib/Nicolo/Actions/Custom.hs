@@ -26,20 +26,29 @@ import           Nicolo.Layout.MouseResizableTile
 withAllWindows :: (Window -> X ()) -> X ()
 withAllWindows action = traverse_ action . W.index . windowset =<< get
 
-{-|
-   Send notification with `notify-send`.
-   Title and body can be formatted with some basic HTML.
--}
-sendNotification :: MonadIO m => String -> String -> m ()
-sendNotification title body = spawn $ "notify-send -u low " ++ safeArgs [title, body]
+sendNotification :: MonadIO m => String -> String -> String -> m ()
+sendNotification urgency title body = spawn $ "notify-send -u " ++ urgency ++ " " ++ safeArgs [title, body]
+
+sendTaggedNotification :: MonadIO m => String -> String -> String -> String -> m ()
+sendTaggedNotification urgency tag title body = spawn $ "dunstify -u " ++ urgency ++ " -h string:x-dunst-stack-tag:" ++ tag ++ " " ++ safeArgs [title, body]
 
 {-|
-   Send tagged notification with `dunstify`;
+   Send low-urgency notification with `notify-send`.
+   Title and body can be formatted with some basic HTML.
+-}
+sendLowNotification :: MonadIO m => String -> String -> m ()
+sendLowNotification = sendNotification "low"
+
+sendNormalNotification :: MonadIO m => String -> String -> m ()
+sendNormalNotification = sendNotification "normal"
+
+{-|
+   Send low-urgency tagged notification with `dunstify`;
    this way, newer notifications will replace older ones if they
    share the same tag (useful for brighness/volume changes, etc.)
 -}
-sendTaggedNotification :: MonadIO m => String -> String -> String -> m ()
-sendTaggedNotification tag title body = spawn $ "dunstify -u low -h string:x-dunst-stack-tag:" ++ tag ++ " " ++ safeArgs [title, body]
+sendLowTaggedNotification :: MonadIO m => String -> String -> String -> m ()
+sendLowTaggedNotification = sendTaggedNotification "low"
 
 {-|
    Shift window to the given workspace id and send a notification
@@ -48,7 +57,7 @@ sendTaggedNotification tag title body = spawn $ "dunstify -u low -h string:x-dun
 shiftToAndNotify :: WorkspaceId -> ManageHook
 shiftToAndNotify ws = do
                         cw <- currentWs
-                        unless (cw == ws) $ sendNotification title body
+                        unless (cw == ws) $ sendLowNotification title body
                         doShift ws
                   where title = "XMonad LayoutHook"
                         body = "Moved window to <b>" ++ ws ++ "</b> workspace!"
@@ -123,5 +132,5 @@ modifyBrightness action amount = do
    spawn $ "lux" ++ show action ++ show amount ++ "%"
    -- TODO find out why this actually shows the level before the `spawn` on the line before was executed
    currentBrightness <- runProcessWithInput "lux" ["-G"] ""
-   sendTaggedNotification "brightnessLvl" "XMonad Action" $ "Set brightness to <b>" ++ filter isPrint currentBrightness ++ "</b>!"
+   sendLowTaggedNotification "brightnessLvl" "XMonad Action" $ "Set brightness to <b>" ++ filter isPrint currentBrightness ++ "</b>!"
 
