@@ -3,6 +3,7 @@ module Nicolo.Util.Keys.Custom where
 import           Data.Char
 import qualified Data.Map as M
 import           Data.Maybe
+import           Data.Tuple (swap)
 import           Control.Applicative (liftA2)
 import           XMonad
 import qualified XMonad.StackSet as W
@@ -104,13 +105,22 @@ myKeysWithDescription conf = [
     , (("Take screenshot of selected area", "M-<Print>"), takeScreenshot $ Scrot SelectedArea defScrotName defScrotCmd)
     , (("Open Quick-Paste menu", "M-C-S-p"), openQuickPasteMenu)
     , (("Spawn XMonad command helper", "M-C-h"), lookupXMonadCommands conf)
+    , (("Search existing XMonad shortcuts", "M-S-C-h"), lookupXMonadShortcuts conf)
+    , (("Search useful Linux commands and shortcuts", "M-C-l"), showUsefulLinuxCmds)
+    , (("Show useful Linux tips", "M-S-C-l"), showUsefulLinuxTips)
     ]
 
 lookupXMonadCommands :: XConfig Layout -> X ()
-lookupXMonadCommands conf = myDmenuPrompt (myCenterDMonad "Lookup XMonad command:" xmonadCmdsHistory $ M.keys myXMonadCommands) handleCommand
-    where xmonadCmdsHistory = "/home/freestingo/Documents/suckless/dmenu-5.0/histfile-xmonadcmds"
-          myXMonadCommands = M.fromList $ fst <$> myKeysWithDescription conf
-          handleCommand name = case M.lookup name myXMonadCommands of
-            (Just n) -> sendNotification "XMonad Help Menu" $ "Press <b>" ++ filter (`notElem` "<>") n ++ "</b> to <b>" ++ liftA2 (++) (map toLower . take 1) (drop 1) name ++ "</b>!"
-            Nothing  -> sendNotification "XMonad Help Menu" $ "Looks like there's <b>no command</b> to <b>" ++ name ++ "</b> yet!"
+lookupXMonadCommands conf = myDmenuPrompt (myCenterDMonad' "Lookup XMonad command:" $ M.keys myXMonadCommands) handleCommand
+    where myXMonadCommands = M.fromList $ fst <$> myKeysWithDescription conf
+          handleCommand desc = case M.lookup desc myXMonadCommands of
+            (Just n) -> sendLowNotification "XMonad Help Menu" $ "Press <b>" ++ sanitize n ++ "</b> to <b>" ++ detitlize desc ++ "</b>!"
+            Nothing  -> sendLowNotification "XMonad Help Menu" $ "Looks like there's <b>no command</b> to <b>" ++ desc ++ "</b> yet!"
+
+lookupXMonadShortcuts :: XConfig Layout -> X ()
+lookupXMonadShortcuts conf = myDmenuPrompt (myCenterDMonad' "Lookup XMonad shortcut:" $ M.keys myXMonadShortcuts) handleShortcut
+    where myXMonadShortcuts = M.fromList $ swap . fst <$> myKeysWithDescription conf
+          handleShortcut shortcut = case M.lookup shortcut myXMonadShortcuts of
+            (Just action) -> sendLowNotification "XMonad Help Menu" $ "Press <b>" ++ sanitize shortcut ++ "</b> to <b>" ++ detitlize action ++ "</b>!"
+            Nothing       -> sendLowNotification "XMonad Help Menu" $ "Looks like there's <b>no action</b> assigned to <b>" ++ shortcut ++ "</b> yet!"
 

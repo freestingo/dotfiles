@@ -386,6 +386,14 @@
     summary = "XMonad Help Menu"
     new_icon = /usr/share/icons/Yaru/48x48/apps/help.png
 
+[linux-commands-menu]
+    summary = "Linux Commands"
+    new_icon = /var/lib/app-info/icons/ubuntu-hirsute-universe/64x64/tuxtype_tuxtype.png
+
+[linux-tips-menu]
+    summary = "Linux Tips"
+    new_icon = /var/lib/app-info/icons/ubuntu-hirsute-universe/64x64/tuxtype_tuxtype.png
+
 [scrot]
     summary = "scrot"
     new_icon = /usr/share/icons/Yaru/48x48/apps/applets-screenshooter.png

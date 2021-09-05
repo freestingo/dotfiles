@@ -6,6 +6,7 @@ import           Data.Char
 import qualified Data.Map as M
 import           Data.Maybe
 import           System.Exit
+import           Nicolo.System.Clipboard
 import           XMonad
 import           XMonad.Actions.SpawnOn
 import qualified XMonad.StackSet as W
@@ -326,6 +327,113 @@ xmonadContribs = [
     , "XMonad.Util.XUtils"
     ]
 
+myUsefulLinuxCmds :: M.Map String String
+myUsefulLinuxCmds = M.fromList [
+      ("Display all non-printing characters in text-file (line endings, carriage returns, etc)", "cat -A [filename]")
+    , ("Show system network interfaces", "netstat -ie")
+    , ("Show kernel network routing table", "netstat -r")
+    , ("Show machine IP addresses", "hostname -I")
+    , ("Extract .tar.gz files", "tar -xvzf [filename]")
+    , ("Edit global gitconfig file", "git config --global --edit")
+    , ("Add ssh key to keyring (make git stop ask for password)", "ssh-add ~/.ssh/id_ed25519")
+    ]
+
+myUsefulLinuxTips :: M.Map String String
+myUsefulLinuxTips = M.fromList
+  [ ( "locate can't find existing files"
+    ,    "The <b>locate</b> database is created by another program named <b>updatedb</b>, which is usually run once a "
+      ++ "day as a <i>cron job</i>. For this reason, you could notice that very recent files do not show up when using "
+      ++ "<b>locate</b>.<br><br>To overcome this, it's possible to run the <b>updatedb</b> program manually with <b>sudo</b>."
+    )
+  , ( "Make autojump go to the correct directory"
+    ,    "The <b>autojump</b> command operates via a list of saved directories, each presenting a <i>weight</i> attribute. "
+      ++ "When multiple matches are present, <b>autojump</b> will jump to the highest ranking directory in the file.<br><br>"
+      ++ "Use <b>j -s</b> to <b>check all database entries and their respective weights</b>, and <b>j -i [WEIGHT]</b> or <b>j -d [WEIGHT]</b> "
+      ++ "to manually <b>increase</b> or <b>decrease</b> the current directory's weight in the database."
+    )
+  , ( "File permissions with chmod and octal representation"
+    ,    "The order is <b>owner</b> - <b>group owner</b> - <b>world</b><br><br>"
+      ++ "<b>0</b> -> <b>---</b><br>"
+      ++ "<b>1</b> -> <b>--x</b><br>"
+      ++ "<b>2</b> -> <b>-w-</b><br>"
+      ++ "<b>3</b> -> <b>-wx</b><br>"
+      ++ "<b>4</b> -> <b>r--</b><br>"
+      ++ "<b>5</b> -> <b>r-x</b><br>"
+      ++ "<b>6</b> -> <b>rw-</b><br>"
+      ++ "<b>7</b> -> <b>rwx</b><br><br>"
+      ++ "Example:<br>"
+      ++ "<b>chmod 755 my-script.sh</b>"
+    )
+  , ( "Common permission settings for scripts"
+    ,    "There are two common permission settings for scripts:<br><br>"
+      ++ "- <b>755</b> for scripts that everyone can execute;<br>"
+      ++ "- <b>700</b> for scripts that only the owner can execute.<br><br>"
+      ++ "Note that scripts must be readable to be executed."
+    )
+  , ( "SQL Server INSERT INTO syntax"
+    ,    "The syntax for inserting one or more records in a table is:<br><br>"
+      ++ "<b>INSERT INTO <i>table_name</i><br>"
+      ++ "    (<i>col1</i>, <i>col2</i>, ...)<br>"
+      ++ "VALUES<br>"
+      ++ "   (<i>val1</i>, <i>val2</i>, ...)<br>"
+      ++ " , (<i>val3</i>, <i>val4</i>, ...)<br>"
+      ++ " , ...</b>"
+    )
+  , ( "Generate script from table in SQL Server Management Studio"
+    ,    "<b>Right click</b> on the <b>database</b><br>"
+      ++ "  ↓<br>"
+      ++ "<b>Tasks</b><br>"
+      ++ "  ↓<br>"
+      ++ "<b>Generate Scripts...</b><br><br>"
+      ++ "A wizard will appear; just follow their instructions."
+    )
+  , ( "Edit Vim custom github color scheme"
+    ,    "Steps to modify the custom vim github color scheme:<br><br>"
+      ++ "- modify the <b>github.yml</b> file located in <b>~/Documents/freestingo/neovim/nvcode-color-schemes.vim</b><br><br>"
+      ++ "- run the <b>generate</b> script inside the same folder like this:<br>"
+      ++ "<b>./generate github.yml > ./colors/github.vim</b><br><br>"
+      ++ "- <b>commit</b>, <b>push</b>, and <b>run :PlugUpdate</b> in vim to load the changes."
+    )
+  , ( "Change PulseAudio sinks from terminal"
+    ,    "Use the <b>pacmd</b> cli (check <b>man pulse-cli-syntax</b> for more info):<br><br>"
+      ++ "<b>pacmd move-sink-input index sink-index|sink-name</b><br><br>"
+      ++ "The <b>index</b> represents one currently active input to sinks, a.k.a. the app's playback stream "
+      ++ "(list all active playback streams with <b>pacmd list-sink-inputs</b>)."
+    )
+  , ( "Mix pc audio and mic together"
+    ,    "Create two null-sinks called <b>mixed-monitor</b> and <b>mixed-output</b>:<br>"
+      ++ "- <b>mixed-monitor</b>: mixdown channel for pc audio you want to include (youtube, vlc, etc...)<br>"
+      ++ "- <b>mixed-output</b>: same as mixed-monitor + your mic<br><br>"
+      ++ "Use this command when creating null-sinks in order to customize the name in <b><i>pavucontrol</i></b> (<i>Ou</i>tput Devices tab):<br>"
+      ++ "<b>pactl load-module module-null-sink sink_name=<i>MyName</i> sink_properties=device.description='<i>My_Name</i>'</b><br><br>"
+      ++ "Now create three loopbacks (<b>pactl load-module module-loopback</b>) and set them like this in the <i>Recording</i> tab:<br>"
+      ++ "- <b>Loopback to Scarlett 414</b> <i>from</i> <b>Monitor of Mixed_Monitor</b>: send the mixdown channel to your headphones<br>"
+      ++ "- <b>Loopback to Mixed_Output</b> <i>from</i> <b>Monitor of Mixed_Monitor</b>: send the mixdown channel also to the actual output<br>"
+      ++ "- <b>Loopback to Mixed_Output</b> <i>from</i> <b>Audio interno Stereo Analogico</b>: send the mic audio to the output channel<br><br>"
+      ++ "This way you can redirect (<i>Playback</i> tab) to mixed-output all sounds you want to hear and make others hear, and instead to "
+      ++ "mixed-monitor if you don't want others to hear them (i.e. skype, in order to avoid nasty feedback loops).<br><br>"
+      ++ "Remember to set <b>Monitor of Mixed_Output</b> as input in the <i>Recording</i> tab as well."
+    )
+  , ( "Debug bash scripts"
+    ,    "<b>bash</b> provides a method of tracing, implemented by the <b>-x</b> option. "
+      ++ "It's useful for checking into what the commands executed in the script actually expand to.<br><br>"
+      ++ "Just add it to your shebang like this:<br>"
+      ++ "<b>#!/usr/bin/bash -x</b><br><br>"
+      ++ "If you want to just trace portions of your scripts, use the <b>set</b> command instead like this:<br>"
+      ++ "<b>set -x # Turn on tracing</b><br>"
+      ++ "... code to debug ... <br>"
+      ++ "<b>set +x # Turn off tracing</b>"
+    )
+  , ( "Access virtual terminal session"
+    ,    "Press <b>Ctrl</b>+<b>Alt</b>+<b>F6</b> to access the bare terminal session; "
+      ++ "to go back to the X gui session, press <b>Ctrl</b>+<b>Alt</b>+<b>F1</b>."
+    )
+  , ( "Type accented vocals (uppercase and lowercase)"
+    ,    "Press <b>Alt Gr</b>+<b>ù</b>, followed by the vocal you want to accent.<br>"
+      ++ "If you want an acute accent instead, use <b>Alt Gr</b>+<b>,</b>."
+    )
+  ]
+
 myDzenFont :: String
 myDzenFont = "Hasklug Nerd Font Mono"
 
@@ -424,8 +532,28 @@ searchXMonadContrib = myDmenuPrompt (myCenterDMonad "Search xmonad-contrib modul
           doSearch = spawn . (dmenuSearch ++) . safeArg . ("https://hackage.haskell.org/package/xmonad-contrib-0.16/docs/" ++) . toSearchTerm
           toSearchTerm = (++ ".html") . map (\x -> if x == '.' then '-' else x)
 
+showUsefulLinuxCmds :: X ()
+showUsefulLinuxCmds = myDmenuPrompt (myCenterDMonad' "Show useful command:" $ M.keys myUsefulLinuxCmds) showCmd
+    where showCmd desc = case M.lookup desc myUsefulLinuxCmds of
+            (Just cmd) -> do
+                            sendLowNotification "Linux Commands" $ "The command is:<br><br><b>" ++ cmd ++ "</b><br><br>(copied to clipboard)"
+                            liftIO $ setClipboardString cmd
+            Nothing    -> sendLowNotification "Linux Commands" $ "Looks like there's <b>no saved command</b> to <b>" ++ detitlize desc ++ "</b> yet!"
+
+showUsefulLinuxTips :: X ()
+showUsefulLinuxTips = myDmenuPrompt (myCenterDMonad' "Show useful tips:" $ M.keys myUsefulLinuxTips) showTip
+    where showTip desc = case M.lookup desc myUsefulLinuxTips of
+            (Just tip) -> sendNormalNotification "Linux Tips" tip
+            Nothing    -> sendNormalNotification "Linux Tips" $ "Looks like there's <b>no tip</b> about <b>" ++ detitlize desc ++ "</b> yet!"
+
 confirmLogout :: X ()
 confirmLogout = do
     result <- D.menuArgs "dmenu" ["-c", "-i", "-h", "30", "-fn", myDmenuFont, "-p", "Confirm logout?"] ["No", "Yes"]
     when (result == "Yes") $ io exitSuccess
+
+sanitize :: String -> String
+sanitize = filter (`notElem` "<>")
+
+detitlize :: String -> String
+detitlize = liftA2 (++) (map toLower . take 1) (drop 1)
 
