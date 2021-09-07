@@ -15,6 +15,7 @@ import qualified XMonad.StackSet as W
 import           XMonad.Util.Run
 
 import           Nicolo.Util.Functions
+import           Nicolo.Util.CustomVariables
 import           Nicolo.Layout.MouseResizableTile
 
 {-|
@@ -56,11 +57,11 @@ sendLowTaggedNotification = sendTaggedNotification "low"
 -}
 shiftToAndNotify :: WorkspaceId -> ManageHook
 shiftToAndNotify ws = do
-                        cw <- currentWs
-                        unless (cw == ws) $ sendLowNotification title body
-                        doShift ws
-                  where title = "XMonad LayoutHook"
-                        body = "Moved window to <b>" ++ ws ++ "</b> workspace!"
+   cw <- currentWs
+   unless (cw == ws) $ sendLowNotification title body
+   doShift $ if ws `elem` myWorkspaces then ws else cw
+   where title = "XMonad LayoutHook"
+         body = "Moved window to <b>" ++ ws ++ "</b> workspace!"
 
 modifyWindowPadding :: Integer -> Border -> Border
 modifyWindowPadding x (Border t b l r) = Border (t + x) b (l + x) r

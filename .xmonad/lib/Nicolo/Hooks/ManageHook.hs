@@ -34,6 +34,7 @@ myManageHook = composeAll (concat
     , [ className =? fc         --> doCenterFloat | fc <- myFloatClasses ]
     , [ className =? rfc        --> doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7) | rfc <- myResizeFloatClasses ]
     , [ className =? rb         --> hasBorder False | rb <- myRemoveBorderClasses ]
+    , [ className =? "Skype"    --> shiftToAndNotify "skype" ]
     , [ resource  =? ir         --> doIgnore | ir <- myIgnoreResources ]
     , [ manageSpawn ]
     ])
