@@ -88,8 +88,16 @@ fi
 #export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
 # some more ls aliases
-alias ll='ls -lhtA --color=always --time-style="+%F %H:%M" | bat --style="plain"'
-alias l='ls -lhA --color=always --time-style="+%F %H:%M" | bat --style="plain"'
+my_ls () {
+    ls -lhA --color=always --time-style="+%F %H:%M" "$@" | bat --style="plain"
+}
+
+my_ls_newest_first () {
+    ls -lhtA --color=always --time-style="+%F %H:%M" "$@" | bat --style="plain"
+}
+
+alias l='my_ls'
+alias ll='my_ls_newest_first'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
