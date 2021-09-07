@@ -53,7 +53,7 @@ startOncode = do
 startNpo :: X ()
 startNpo = do
              spawn "teams"
-             spawn $ "firefox -new-window outlook.office.com/mail/inbox"
+             spawn "firefox -new-window outlook.office.com/mail/inbox"
 
 myProjectStartHooks :: [(String, X ())]
 myProjectStartHooks = [("oncode", startOncode), ("npo", startNpo), ("chat", startChat), ("skype", startSkype), ("vm", startVirtualBox)]

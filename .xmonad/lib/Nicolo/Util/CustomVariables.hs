@@ -45,9 +45,9 @@ myWorkspaces = [ "code"
                , "back"
                , "web"
                , "oncode"
-               , "npo"
-               , "chat"
                , "vm"
+               , "chat"
+               , "skype"
                , "fun"
                ]
 
