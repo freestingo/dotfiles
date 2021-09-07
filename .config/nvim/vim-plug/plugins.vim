@@ -29,5 +29,6 @@ Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
 Plug 'fannheyward/telescope-coc.nvim'
 Plug 'kyazdani42/nvim-web-devicons'
 Plug 'szw/vim-maximizer'
+Plug 'pbrisbin/vim-syntax-shakespeare'
 
 call plug#end()
