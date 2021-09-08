@@ -30,6 +30,7 @@ import           XMonad.Util.NamedScratchpad
 import qualified XMonad.Util.Paste as P
 
 import           Nicolo.Actions.Custom
+import qualified Nicolo.Actions.CycleWS as MyCWS
 import           Nicolo.Hooks.DynamicProjects
 import           Nicolo.Util.CustomVariables
 import           Nicolo.Util.Functions
@@ -53,8 +54,8 @@ myKeysWithDescription conf = [
     , (("Swap current screen with previous screen", "M-S-C-j"), swapPrevScreen)
     , (("Quit xmonad (logout)", "M-S-q"), confirmLogout)
     , (("Restart xmonad", "M-q"), spawn "xmonad --recompile; xmonad --restart")
-    , (("Go to next workspace", "M-l"), nextWS)
-    , (("Go to previous workspace", "M-h"), prevWS)
+    , (("Go to next workspace", "M-l"), MyCWS.nextWS)
+    , (("Go to previous workspace", "M-h"), MyCWS.prevWS)
     , (("Rotate through the available layout algorithms", "M-<Space>"), sendMessage NextLayout)
     , (("Reset the layouts on the current workspace to default", "M-C-<Space>"), setLayout $ XMonad.layoutHook conf)
     , (("Shrink the master area", "M--"), sendMessage Shrink)

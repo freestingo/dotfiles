@@ -44,7 +44,7 @@ myKeysOldSyntax conf@XConfig { XMonad.modMask = modm } = M.fromList $
     -- mod-shift-[1..9], Move client to workspace N
     [((m .|. modm, k), windows $ f i)
         | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
-        , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
+        , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
 
     -- mod-{k,j} -> Switch to physical/Xinerama screens 1 or 2
     -- mod-shift-{k,j} -> Move client to screen 1 or 2
