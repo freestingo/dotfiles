@@ -96,8 +96,13 @@ my_ls_newest_first () {
     ls -lhtA --color=always --time-style="+%F %H:%M" "$@" | bat --style="plain"
 }
 
+my_ls_recursive () {
+    ls -lhR --color=always --time-style="+%F %H:%M" "$@" | bat --style="plain"
+}
+
 alias l='my_ls'
 alias ll='my_ls_newest_first'
+alias lr='my_ls_recursive'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
