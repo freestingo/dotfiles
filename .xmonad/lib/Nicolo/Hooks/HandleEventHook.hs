@@ -12,20 +12,20 @@ import Nicolo.Hooks.DynamicProjects
 import Nicolo.Util.Functions
 
 {-|
-    Event handling
+  Event handling
 
-    * EwmhDesktops users should change this to ewmhDesktopsEventHook
+  * EwmhDesktops users should change this to ewmhDesktopsEventHook
 
-    Defines a custom handler function for X Events. The function should
-    return (All True) if the default handler is to be run afterwards. To
-    combine event hooks use mappend or mconcat from Data.Monoid.
+  Defines a custom handler function for X Events. The function should
+  return (All True) if the default handler is to be run afterwards. To
+  combine event hooks use mappend or mconcat from Data.Monoid.
 -}
 myHandleEventHook = dynamicTitle myDynamicPropertyHook
                 <+> borderEventHook
                 <+> minimizeEventHook
                 <+> screenCornerEventHook
-              where myDynamicPropertyHook = composeAll [
-                                    (("WhatsApp Web" `isInfixOf`) <$> title)
-                               <||> (("Telegram Web" `isInfixOf`) <$> title) --> shiftToAndNotify "chat"
-                              ]
+  where myDynamicPropertyHook = composeAll customHooks
+        customHooks = [    (("WhatsApp Web" `isInfixOf`) <$> title)
+                      <||> (("Telegram Web" `isInfixOf`) <$> title) --> shiftToAndNotify "chat"
+                      ]
 

@@ -40,16 +40,17 @@ myModMask :: KeyMask
 myModMask = mod1Mask
 
 myWorkspaces :: [String]
-myWorkspaces = [ "code"
-               , "front"
-               , "back"
-               , "web"
-               , "oncode"
-               , "vm"
-               , "chat"
-               , "skype"
-               , "fun"
-               ]
+myWorkspaces =
+  [ "code"
+  , "front"
+  , "back"
+  , "web"
+  , "oncode"
+  , "vm"
+  , "chat"
+  , "skype"
+  , "fun"
+  ]
 
 myNormalBorderColor :: String
 myNormalBorderColor  = "#1E2428"
@@ -58,20 +59,22 @@ myFocusedBorderColor :: String
 myFocusedBorderColor = "#8494B8"
 
 myGridSelectConfig :: HasColorizer a => GSConfig a
-myGridSelectConfig = def { gs_font = "xft:Hasklug Nerd Font Mono:pixelsize=16:antialias=true:hinting=true"
-                         , gs_cellheight = 30
-                         , gs_cellwidth = 100
-                         }
+myGridSelectConfig = def
+  { gs_font = "xft:Hasklug Nerd Font Mono:pixelsize=16:antialias=true:hinting=true"
+  , gs_cellheight = 30
+  , gs_cellwidth = 100
+  }
 
 myScratchpads :: [NamedScratchpad]
-myScratchpads = [ NS "terminal" spawnTerminal findTerminal manageTerminal
-                , NS "todo" spawnTodo findTodo manageTodo
-                ]
-                  where spawnTerminal = "alacritty --title=Scratchpad"
-                        findTerminal = title =? "Scratchpad"
-                        manageTerminal = doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7)
+myScratchpads =
+  [ NS "terminal" spawnTerminal findTerminal manageTerminal
+  , NS "todo" spawnTodo findTodo manageTodo
+  ]
+    where spawnTerminal = "alacritty --title=Scratchpad"
+          findTerminal = title =? "Scratchpad"
+          manageTerminal = doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7)
 
-                        spawnTodo = "alacritty --title=TODO --command vim ~/Documents/oncode/projects/npo/todo"
-                        findTodo = title =? "TODO"
-                        manageTodo = doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7)
+          spawnTodo = "alacritty --title=TODO --command vim ~/Documents/oncode/projects/npo/todo"
+          findTodo = title =? "TODO"
+          manageTodo = doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7)
 

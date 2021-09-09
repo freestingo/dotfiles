@@ -40,19 +40,21 @@ myKeys = liftA2 (<+>) myKeysOldSyntax myKeysEZConfig
 
 myKeysOldSyntax :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
 myKeysOldSyntax conf@XConfig { XMonad.modMask = modm } = M.fromList $
-    -- mod-[1..9], Switch to workspace N
-    -- mod-shift-[1..9], Move client to workspace N
-    [((m .|. modm, k), windows $ f i)
-        | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
-        , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
+  -- mod-[1..9], Switch to workspace N
+  -- mod-shift-[1..9], Move client to workspace N
+     [ ((m .|. modm, k), windows $ f i)
+       | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
+       , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]
+     ]
 
     -- mod-{k,j} -> Switch to physical/Xinerama screens 1 or 2
     -- mod-shift-{k,j} -> Move client to screen 1 or 2
- ++ [((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
-        | (key, sc) <- zip [xK_j, xK_k] [0..]
-        , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
+  ++ [ ((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
+       | (key, sc) <- zip [xK_j, xK_k] [0..]
+       , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]
+     ]
 
 myKeysEZConfig :: XConfig Layout -> M.Map (KeyMask, KeySym) (X ())
 myKeysEZConfig conf = mkKeymap conf $ map extractKeyMap (myKeysWithDescription conf)
-    where extractKeyMap ((_, keys), action) = (keys, action)
+  where extractKeyMap ((_, keys), action) = (keys, action)
 

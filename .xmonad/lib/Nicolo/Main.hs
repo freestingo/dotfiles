@@ -23,29 +23,29 @@ main = xmonad
        defaults
 
 {-|
-    A structure containing your configuration settings, overriding
-    fields in the default config. Any you don't override, will
-    use the defaults defined in xmonad/XMonad/Config.hs
+  A structure containing your configuration settings, overriding
+  fields in the default config. Any you don't override, will
+  use the defaults defined in xmonad/XMonad/Config.hs
 
-    No need to modify this.
+  No need to modify this.
 -}
-defaults = def {
-        terminal           = myTerminal,
-        focusFollowsMouse  = myFocusFollowsMouse,
-        clickJustFocuses   = myClickJustFocuses,
-        borderWidth        = myBorderWidth,
-        modMask            = myModMask,
-        workspaces         = myWorkspaces,
-        normalBorderColor  = myNormalBorderColor,
-        focusedBorderColor = myFocusedBorderColor,
+defaults = def
+  { terminal           = myTerminal
+  , focusFollowsMouse  = myFocusFollowsMouse
+  , clickJustFocuses   = myClickJustFocuses
+  , borderWidth        = myBorderWidth
+  , modMask            = myModMask
+  , workspaces         = myWorkspaces
+  , normalBorderColor  = myNormalBorderColor
+  , focusedBorderColor = myFocusedBorderColor
 
-        keys               = myKeys,
-        mouseBindings      = myMouseBindings,
+  , keys               = myKeys
+  , mouseBindings      = myMouseBindings
 
-        layoutHook         = myLayout,
-        manageHook         = myManageHook,
-        handleEventHook    = myHandleEventHook,
-        logHook            = myLogHook,
-        startupHook        = myStartupHook
-    }
+  , layoutHook         = myLayout
+  , manageHook         = myManageHook
+  , handleEventHook    = myHandleEventHook
+  , logHook            = myLogHook
+  , startupHook        = myStartupHook
+  }
 
