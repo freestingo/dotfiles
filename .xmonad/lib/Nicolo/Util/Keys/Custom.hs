@@ -109,6 +109,7 @@ myKeysWithDescription conf = [
     , (("Search existing XMonad shortcuts", "M-S-C-h"), lookupXMonadShortcuts conf)
     , (("Search useful Linux commands and shortcuts", "M-C-l"), showUsefulLinuxCmds)
     , (("Show useful Linux tips", "M-S-C-l"), showUsefulLinuxTips)
+    , (("Open pdf in developer-compendium folder", "M-o"), spawn "openpdf")
     ]
 
 lookupXMonadCommands :: XConfig Layout -> X ()
