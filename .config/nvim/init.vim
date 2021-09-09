@@ -33,7 +33,7 @@ set noerrorbells
 set nowrap
 set incsearch
 set termguicolors
-set scrolloff=8
+set scrolloff=4
 set noshowmode
 set completeopt=menuone,noinsert,noselect
 set signcolumn=yes
