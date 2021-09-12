@@ -1,13 +1,30 @@
+local actions = require('telescope.actions')
+
 require('telescope').setup {
   defaults = {
     file_ignore_patterns = {
         "%.o"
       , "%.hi"
     },
+    layout_config = {
+      horizontal = {
+        preview_width = 0.5,
+        width = 0.93
+      }
+    },
+    -- only show first letter of folders in filepath
+    path_display = {
+      shorten = 1
+    },
     prompt_prefix = "> ",
     mappings = {
       i = {
-        ["<c-a>"] = function() print("ciao raga ahah") end
+        ["<c-a>"] = function() print("ciao raga ahah") end,
+        -- disable default quick-fix-related actions and remapping them
+        -- removing all key-shortcut conflicts with XMonad
+        ["<m-q>"] = false,
+        ["<c-q>"] = false,
+        ["<c-q>"] = actions.send_selected_to_qflist + actions.open_qflist
       }
     }
   }
@@ -21,7 +38,9 @@ local my_mappings = {}
 
 my_mappings.current_buffer_search = function()
   require('telescope.builtin').current_buffer_fuzzy_find({
-    prompt_position = "top",
+    layout_config = {
+      prompt_position = "top"
+    },
     sorting_strategy = "ascending"
   })
 end
