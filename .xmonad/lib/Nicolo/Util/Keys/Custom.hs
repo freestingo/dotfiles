@@ -72,7 +72,7 @@ myKeysWithDescription conf =
   , (("Only toggle struts", "M-S-f"), sendMessage ToggleStruts)
   , (("Go to next window with the same class name as the focused one", "M-n"), nextMatchWithThis Forward className)
   , (("Go to previous window with the same class name as the focused one", "M-S-n"), nextMatchWithThis Backward className)
-  , (("Rotate slave windows up (useful when combined with `limitWindows`)", "M-r"), rotSlavesUp)
+  , (("Rotate slave windows up", "M-r"), rotSlavesUp)
   , (("Rotate slave windows down", "M-S-r"), rotSlavesDown)
   , (("Rotate all windows up", "M-C-r"), rotAllUp)
   , (("Prompt for a project name and then switch to it; automatically creates a project if a new name is returned from the prompt", "M-w"), switchProjectPrompt switchWorkspacePrompt)
