@@ -11,6 +11,8 @@ source $HOME/.config/nvim/plug-config/vim-airline.vim
 source $HOME/.config/nvim/plug-config/indentLine.vim
 source $HOME/.config/nvim/plug-config/vim-fugitive.vim
 source $HOME/.config/nvim/plug-config/tig-explorer.vim
+source $HOME/.config/nvim/plug-config/vim-highlightedyank.vim
+source $HOME/.config/nvim/plug-config/vim-visual-multi.vim
 source $HOME/.config/nvim/plug-config/language-client-neovim.vim
 " enabling lspconfig.vim makes treesitter's syntax highlighting not work
 " source $HOME/.config/nvim/plug-config/lspconfig.vim
