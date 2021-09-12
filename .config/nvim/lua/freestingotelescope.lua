@@ -66,5 +66,26 @@ my_mappings.file_browser_config_files = function()
   })
 end
 
+my_mappings.find_xmonad_config_files = function()
+  require('telescope.builtin').find_files({
+    prompt_title = "XMonad Config",
+    cwd = "~/.xmonad/lib"
+  })
+end
+
+my_mappings.live_grep_xmonad_config_files = function()
+  require('telescope.builtin').live_grep({
+    prompt_title = "Search in XMonad Config",
+    cwd = "~/.xmonad/lib"
+  })
+end
+
+my_mappings.file_browser_xmonad_config_files = function()
+  require('telescope.builtin').file_browser({
+    prompt_title = "Files in XMonad Config",
+    cwd = "~/.config/nvim"
+  })
+end
+
 -- this is lua's way to export stuff from modules (kinda like oldschool javascript)
 return my_mappings

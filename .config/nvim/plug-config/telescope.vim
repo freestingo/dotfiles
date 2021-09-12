@@ -7,11 +7,17 @@ nnoremap <leader>ff <cmd>lua require('telescope.builtin').find_files()<CR>
 " Lists files in ~/.config/nvim/ (for easier vimrc editing)
 nnoremap <leader>vff <cmd>lua require('freestingotelescope').find_neovim_config_files()<CR>
 
+" Lists files in ~/.xmonad/lib/ (for easier xmonad config editing)
+nnoremap <leader>xff <cmd>lua require('freestingotelescope').find_xmonad_config_files()<CR>
+
 " Search for a string in your current working directory and get results live as you type (respecting .gitignore)
 nnoremap <leader>fg <cmd>lua require('telescope.builtin').live_grep()<CR>
 
 " Search for a string in ~/.config/nvim/
 nnoremap <leader>vfg <cmd>lua require('freestingotelescope').live_grep_config_files()<CR>
+
+" Search for a string in ~/.xmonad/lib/
+nnoremap <leader>xfg <cmd>lua require('freestingotelescope').live_grep_xmonad_config_files()<CR>
 
 " Lists open buffers in current neovim instance
 nnoremap <leader>bb <cmd>lua require('telescope.builtin').buffers()<CR>
@@ -27,6 +33,9 @@ nnoremap <leader>fb <cmd>lua require('telescope.builtin').file_browser()<CR>
 
 " Lists files and folders in ~/.config/nvim/
 nnoremap <leader>vfb <cmd>lua require('freestingotelescope').file_browser_config_files()<CR>
+
+" Lists files and folders in ~/.xmonad/lib/
+nnoremap <leader>xfb <cmd>lua require('freestingotelescope').file_browser_xmonad_config_files()<CR>
 
 " Lists any LSP actions for the word under the cursor, that can be triggered with <CR>
 nnoremap <leader>wac <cmd>lua require('telescope.builtin').lsp_code_actions()<CR>
