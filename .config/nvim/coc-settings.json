@@ -5,6 +5,7 @@
         "yaml",
         "json"
     ],
+    "python.pythonPath": "/usr/bin/python3",
     "languageserver": {
         "haskell": {
             "command": "haskell-language-server-wrapper",
