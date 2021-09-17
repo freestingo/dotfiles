@@ -1,0 +1,3 @@
+# used this to switch ctrl and caps; now I handle that with `setxkbmap`
+dmi:bvnInsydeCorp.:bvrV1.10:bd08/22/2017:br1.10:efr1.9:svnAcer:pnAspireA715-71G:pvrV1.10:rvnKBL:rnCharmeleon_KLS:rvrV1.10:cvnAcer:ct10:cvrV1.10:
+  KEYBOARD_KEY_3a=leftctrl
