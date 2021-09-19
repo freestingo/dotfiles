@@ -28,6 +28,6 @@ myLogHook = multiPP focusPP unfocusPP
         unfocusPP = focusPP
 
 clickable :: String -> String
-clickable ws = "<action=xdotool key alt+" ++ show index ++ ">" ++ ws ++ "</action>"
+clickable ws = "<action=xdotool key super+" ++ show index ++ ">" ++ ws ++ "</action>"
   where index = fromJust $ M.lookup ws workspaceIndexes
         workspaceIndexes = M.fromList $ zip myWorkspaces [1..]

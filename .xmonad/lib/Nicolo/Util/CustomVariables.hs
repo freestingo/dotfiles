@@ -37,7 +37,7 @@ myBorderWidth = 4
 -- mod1Mask = left alt
 -- mod4Mask = windows key
 myModMask :: KeyMask
-myModMask = mod1Mask
+myModMask = mod4Mask
 
 myWorkspaces :: [String]
 myWorkspaces =
@@ -74,7 +74,7 @@ myScratchpads =
           findTerminal = title =? "Scratchpad"
           manageTerminal = doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7)
 
-          spawnTodo = "alacritty --title=TODO --command vim ~/Documents/oncode/projects/npo/todo"
+          spawnTodo = "alacritty --title=TODO --command vim ~/Documents/oncode/todo"
           findTodo = title =? "TODO"
           manageTodo = doRectFloat (W.RationalRect 0.15 0.15 0.7 0.7)
 
