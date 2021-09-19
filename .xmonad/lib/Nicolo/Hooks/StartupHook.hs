@@ -25,7 +25,7 @@ myStartupHook = do
   --          ++ " --blur-background --blur-method gaussian --blur-kern 11x11gaussian"
   --          ++ " --xrender-sync-fence"
   -- manually setting latitude and longitude values because auto-location detection won't work for some reason
-  spawnOnce "redshift-gtk -l 42.907546:13.882904"
+  -- spawnOnce "redshift-gtk -l 42.907546:13.882904"
   spawnOnce "~/scripts/startupcmds.sh"
   spawnOnce "nm-applet"
   spawnOnce "volumeicon"
