@@ -24,3 +24,5 @@
 	alias = ! git config --get-regexp ^alias\\. | sed -e s/^alias\\.// -e s/\\ /\\ =\\ /
 [pull]
 	ff = only
+[init]
+	defaultBranch = main
