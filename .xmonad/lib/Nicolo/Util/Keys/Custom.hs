@@ -111,6 +111,7 @@ myKeysWithDescription conf =
   , (("Show useful Linux tips", "M-S-C-l"), showUsefulLinuxTips)
   , (("Open pdf in developer-compendium folder", "M-o"), spawn "compexpl")
   , (("Mount or unmount external drives", "M-S-C-m"), spawn "nicdrives")
+  , (("Open symbol characters paste menu", "M-S-C-s"), spawn "/home/freestingo/scripts/symbols.sh")
   ]
 
 lookupXMonadCommands :: XConfig Layout -> X ()
