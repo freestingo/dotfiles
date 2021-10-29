@@ -12,9 +12,8 @@ require('telescope').setup {
         width = 0.93
       }
     },
-    -- only show first letter of folders in filepath
     path_display = {
-      shorten = 1
+      truncate = 1
     },
     prompt_prefix = "> ",
     mappings = {
