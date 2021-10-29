@@ -42,6 +42,8 @@ set signcolumn=yes
 set cmdheight=2 "Give more space for displaying messages
 set clipboard+=unnamedplus
 set guicursor+=a:blinkon1
+set nrformats=bin,hex,alpha
+set lazyredraw
 " set cursorline
 filetype on
 
@@ -83,6 +85,8 @@ nnoremap <leader>tsj :call SetBuffer(0)<CR>
 nnoremap <leader>tsk :call SetBuffer(1)<CR>
 nnoremap <leader>tsl :call SetBuffer(2)<CR>
 nnoremap <leader>tsò :call SetBuffer(3)<CR>
+
+nnoremap <leader>now "=strftime("%d-%m-%Y - %R")<CR>p
 
 tnoremap shq <C-\><C-n>:bd!<CR>
 tnoremap ghq :q<C-\><C-n>:bd!<CR>
