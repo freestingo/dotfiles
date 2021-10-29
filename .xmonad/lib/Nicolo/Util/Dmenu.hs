@@ -433,6 +433,11 @@ myUsefulLinuxTips = M.fromList
     ,    "Press <b>Alt Gr</b>+<b>ù</b>, followed by the vocal you want to accent.<br>"
       ++ "If you want an acute accent instead, use <b>Alt Gr</b>+<b>,</b>."
     )
+  , ( "Show file commit history via terminal or GUI"
+    ,    "For the terminal view, use the <b>tig</b> command followed by one or more filepaths.<br>You can also add the "
+      ++ "<b>--all</b> option to also see changes coming from branches other than the one you're currently checking out.<br><br>"
+      ++ "For a GUI view, instead, use <b>gitk</b> instead."
+    )
   ]
 
 myDzenFont :: String
